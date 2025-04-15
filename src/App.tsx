@@ -46,25 +46,25 @@ function HomePage() {
     {
       title: 'Web Designing',
       description: 'Custom web design solutions for your digital presence',
-      icon: <Globe className="w-12 h-12 mb-4 text-blue-600" />,
+      icon: <Globe className="w-12 h-12 mb-4 text-indigo-500" />,
       link: '/web-design'
     },
     {
       title: 'Graphic Designing',
       description: 'Creative graphic design services for your brand',
-      icon: <Palette className="w-12 h-12 mb-4 text-blue-600" />,
+      icon: <Palette className="w-12 h-12 mb-4 text-indigo-500" />,
       link: '/graphic-design'
     },
     {
       title: 'Software Development',
       description: 'Custom software solutions for your business needs',
-      icon: <Code className="w-12 h-12 mb-4 text-blue-600" />,
+      icon: <Code className="w-12 h-12 mb-4 text-indigo-500" />,
       link: '/software-dev'
     },
     {
       title: 'Tally Solutions',
       description: 'Official Tally solutions and support',
-      icon: <Database className="w-12 h-12 mb-4 text-blue-600" />,
+      icon: <Database className="w-12 h-12 mb-4 text-indigo-500" />,
       link: '/tally-partner'
     }
   ];
@@ -188,18 +188,18 @@ function HomePage() {
               viewport={{ once: true }}
               className="relative group"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-blue-600/20 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
               <a 
                 href="https://advisory.finaccosolutions.com/"
                 target="_blank"
                 rel="noopener noreferrer" 
-                className="relative block bg-white/95 backdrop-blur-sm p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
+                className="relative block bg-gradient-to-br from-indigo-900/90 to-blue-900/90 p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl border border-indigo-500/20"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-2xl font-bold">Finacco Advisory</h3>
-                  <ExternalLink className="w-6 h-6 text-indigo-600" />
+                  <h3 className="text-2xl font-bold text-white">Finacco Advisory</h3>
+                  <ExternalLink className="w-6 h-6 text-indigo-400" />
                 </div>
-                <p className="text-gray-600 mb-6">
+                <p className="text-indigo-100 mb-6">
                   Expert financial advisory services including tax planning, auditing, and business consulting.
                 </p>
               </a>
@@ -212,18 +212,18 @@ function HomePage() {
               viewport={{ once: true }}
               className="relative group"
             >
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
+              <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-blue-600/20 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
               <a 
                 href="https://connect.finaccosolutions.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative block bg-white/95 backdrop-blur-sm p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
+                className="relative block bg-gradient-to-br from-indigo-900/90 to-blue-900/90 p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl border border-indigo-500/20"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-2xl font-bold">Finacco Connect</h3>
-                  <ExternalLink className="w-6 h-6 text-indigo-600" />
+                  <h3 className="text-2xl font-bold text-white">Finacco Connect</h3>
+                  <ExternalLink className="w-6 h-6 text-indigo-400" />
                 </div>
-                <p className="text-gray-600 mb-6">
+                <p className="text-indigo-100 mb-6">
                   Advanced accounting utility software solutions for seamless financial management.
                 </p>
               </a>
@@ -239,24 +239,24 @@ function HomePage() {
                 transition={{ delay: index * 0.1 }}
                 className="relative group"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-blue-600/20 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
                 <a
                   href={service.link}
-                  className="relative block bg-white/95 backdrop-blur-sm p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
+                  className="relative block bg-gradient-to-br from-indigo-900/90 to-blue-900/90 p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl border border-indigo-500/20"
                 >
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-2xl font-bold">{service.title}</h3>
+                    <h3 className="text-2xl font-bold text-white">{service.title}</h3>
                     <motion.div
                       whileHover={{ scale: 1.1 }}
-                      className="bg-indigo-100 rounded-full p-2"
+                      className="bg-indigo-800/50 rounded-full p-2"
                     >
-                      <ArrowRight className="w-6 h-6 text-indigo-600" />
+                      <ArrowRight className="w-6 h-6 text-indigo-400" />
                     </motion.div>
                   </div>
                   <div className="mb-6">
                     {service.icon}
                   </div>
-                  <p className="text-gray-600">
+                  <p className="text-indigo-100">
                     {service.description}
                   </p>
                 </a>

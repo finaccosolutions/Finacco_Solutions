@@ -50,8 +50,7 @@ const services = [
   {
     icon: <Users className="w-8 h-8" />,
     title: "Training",
-    items: ["Basic Operations", "Advanced Features", "Report Generation", "Troubl
-eshooting"]
+    items: ["Basic Operations", "Advanced Features", "Report Generation", "Troubleshooting"]
   },
   {
     icon: <HelpCircle className="w-8 h-8" />,
@@ -104,26 +103,51 @@ export default function TallyPartner() {
           className="space-y-20"
         >
           {/* Hero Section */}
-          <div className="text-center">
-            <motion.div 
-              className="flex items-center justify-center mb-8"
-              animate={{ 
-                scale: [1, 1.1, 1],
-                rotate: [0, 5, -5, 0]
-              }}
-              transition={{ 
-                duration: 4,
-                repeat: Infinity,
-                ease: "easeInOut"
-              }}
-            >
-              <Database className="w-20 h-20 text-amber-400" />
-            </motion.div>
-            <h1 className="text-5xl font-bold mb-6 text-white">Tally Solutions Partner</h1>
-            <p className="text-xl text-amber-100 max-w-2xl mx-auto">
-              Your trusted partner for all Tally.ERP 9 solutions. We provide comprehensive
-              implementation, training, and support services to optimize your business operations.
-            </p>
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-amber-950 to-orange-950 p-8 md:p-16">
+            <div className="absolute inset-0">
+              <div className="absolute inset-0 bg-gradient-to-br from-amber-600/20 to-transparent"></div>
+              <div className="absolute bottom-0 left-0 w-full h-1/2 bg-gradient-to-t from-amber-950 to-transparent"></div>
+            </div>
+            <div className="relative z-10">
+              <motion.div 
+                className="flex items-center justify-center mb-12"
+                animate={{ 
+                  scale: [1, 1.1, 1],
+                  rotate: [0, 5, -5, 0]
+                }}
+                transition={{ 
+                  duration: 4,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              >
+                <div className="relative">
+                  <div className="absolute inset-0 animate-ping bg-amber-500/20 rounded-full"></div>
+                  <Database className="w-24 h-24 text-amber-400 filter drop-shadow-lg" />
+                </div>
+              </motion.div>
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.3 }}
+                className="text-center max-w-3xl mx-auto"
+              >
+                <h1 className="text-5xl md:text-6xl font-bold mb-8 text-white bg-clip-text text-transparent bg-gradient-to-r from-amber-200 to-amber-400">
+                  Tally Solutions Partner
+                </h1>
+                <p className="text-xl md:text-2xl text-amber-100 mb-12 leading-relaxed">
+                  Your trusted partner for all Tally.ERP 9 solutions. We provide comprehensive
+                  implementation, training, and support services to optimize your business operations.
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-8 py-4 rounded-full font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  Get Started Today
+                </motion.button>
+              </motion.div>
+            </div>
           </div>
 
           {/* Features Grid */}
@@ -134,7 +158,7 @@ export default function TallyPartner() {
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: index * 0.1 }}
-                className="bg-white/10 backdrop-blur-sm rounded-xl p-6 group hover:bg-white/20 transition-all duration-300"
+                className="bg-gradient-to-br from-amber-800/40 to-orange-800/40 backdrop-blur-sm rounded-xl p-6 group hover:from-amber-700/50 hover:to-orange-700/50 transition-all duration-300 border border-amber-700/30"
               >
                 <motion.div 
                   className="mb-4"
@@ -158,18 +182,21 @@ export default function TallyPartner() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white/10 backdrop-blur-sm rounded-xl p-6 group hover:bg-white/20 transition-all duration-300"
+                  className="relative group"
                 >
-                  <div className="text-amber-400 mb-4">{service.icon}</div>
-                  <h3 className="text-xl font-semibold mb-4 text-white">{service.title}</h3>
-                  <ul className="space-y-2">
-                    {service.items.map((item, i) => (
-                      <li key={i} className="flex items-center text-amber-100">
-                        <span className="w-1.5 h-1.5 bg-amber-400 rounded-full mr-2"></span>
-                        {item}
-                      </li>
-                    ))}
-                  </ul>
+                  <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-orange-500/20 rounded-xl transform transition-transform group-hover:scale-105"></div>
+                  <div className="relative bg-gradient-to-br from-amber-800 to-orange-900 rounded-xl p-6 border border-amber-500/20 shadow-lg">
+                    <div className="text-amber-400 mb-4 transform transition-transform group-hover:scale-110">{service.icon}</div>
+                    <h3 className="text-xl font-semibold mb-4 text-white">{service.title}</h3>
+                    <ul className="space-y-3">
+                      {service.items.map((item, i) => (
+                        <li key={i} className="flex items-center text-amber-100 group-hover:text-amber-50 transition-colors">
+                          <span className="w-2 h-2 bg-amber-400 rounded-full mr-3 group-hover:bg-amber-300"></span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -185,9 +212,9 @@ export default function TallyPartner() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
-                  className="bg-white/10 backdrop-blur-sm rounded-xl p-6 text-center group hover:bg-white/20 transition-all duration-300"
+                  className="bg-gradient-to-br from-amber-800/40 to-orange-800/40 backdrop-blur-sm rounded-xl p-6 text-center group hover:from-amber-700/50 hover:to-orange-700/50 transition-all duration-300 border border-amber-700/30"
                 >
-                  <div className="text-amber-400 mb-4 flex justify-center">{benefit.icon}</div>
+                  <div className="text-amber-400 mb-4 flex justify-center group-hover:scale-110 transition-transform">{benefit.icon}</div>
                   <h3 className="text-xl font-semibold mb-2 text-white">{benefit.title}</h3>
                   <p className="text-amber-100">{benefit.description}</p>
                 </motion.div>
@@ -196,7 +223,7 @@ export default function TallyPartner() {
           </div>
 
           {/* Contact Form */}
-          <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 max-w-2xl mx-auto">
+          <div className="bg-gradient-to-br from-amber-800/40 to-orange-800/40 backdrop-blur-sm rounded-2xl p-8 max-w-2xl mx-auto border border-amber-700/30">
             <h3 className="text-2xl font-semibold mb-6 text-white">Get Tally Support</h3>
             <form className="space-y-6">
               <div className="grid md:grid-cols-2 gap-6">
