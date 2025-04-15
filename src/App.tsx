@@ -354,7 +354,7 @@ function HomePage() {
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
             {[
-              { icon: <Phone className="w-8 h-8" />, text: '+1234567890', href: 'tel:+1234567890' },
+              { icon: <Phone className="w-8 h-8" />, text: '+91 9745524438', href: 'tel:+919745524438' },
               { icon: <Mail className="w-8 h-8" />, text: 'contact@finaccosolutions.com', href: 'mailto:contact@finaccosolutions.com' },
               { icon: <MapPin className="w-8 h-8" />, text: 'Visit Our Office', href: '#location' }
             ].map((item, index) => (
@@ -378,7 +378,7 @@ function HomePage() {
 
       {/* WhatsApp Button */}
       <motion.a
-        href="https://wa.me/1234567890"
+        href="https://wa.me/9745524438"
         className="fixed bottom-24 right-6 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-colors z-50"
         whileHover={{ scale: 1.1 }}
         animate={{ 
