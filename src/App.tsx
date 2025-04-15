@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ChevronUp,
@@ -15,15 +14,14 @@ import {
   Mail,
   MapPin,
   ExternalLink,
-  ArrowRight
+  ArrowRight,
+  Users,
+  Zap,
+  Shield,
+  BookOpen,
+  Settings,
+  CheckCircle
 } from 'lucide-react';
-
-// Import pages
-import WebDesign from './pages/WebDesign';
-import GraphicDesign from './pages/GraphicDesign';
-import SoftwareDev from './pages/SoftwareDev';
-import TallyPartner from './pages/TallyPartner';
-import Services from './pages/Services';
 
 function HomePage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
@@ -46,26 +44,58 @@ function HomePage() {
     {
       title: 'Web Designing',
       description: 'Custom web design solutions for your digital presence',
-      icon: <Globe className="w-12 h-12 mb-4 text-indigo-500" />,
-      link: '/web-design'
+      icon: <Globe className="w-12 h-12 mb-4 text-blue-600" />,
+      features: [
+        'Responsive Design',
+        'UI/UX Development',
+        'E-commerce Solutions',
+        'SEO Optimization',
+        'Performance Tuning',
+        'Content Management'
+      ],
+      bgColor: 'bg-gradient-to-br from-blue-100 to-indigo-100'
     },
     {
       title: 'Graphic Designing',
       description: 'Creative graphic design services for your brand',
-      icon: <Palette className="w-12 h-12 mb-4 text-indigo-500" />,
-      link: '/graphic-design'
+      icon: <Palette className="w-12 h-12 mb-4 text-purple-600" />,
+      features: [
+        'Brand Identity',
+        'Logo Design',
+        'Marketing Materials',
+        'Social Media Graphics',
+        'Print Design',
+        'Packaging Design'
+      ],
+      bgColor: 'bg-gradient-to-br from-purple-100 to-pink-100'
     },
     {
       title: 'Software Development',
       description: 'Custom software solutions for your business needs',
-      icon: <Code className="w-12 h-12 mb-4 text-indigo-500" />,
-      link: '/software-dev'
+      icon: <Code className="w-12 h-12 mb-4 text-emerald-600" />,
+      features: [
+        'Custom Applications',
+        'Mobile App Development',
+        'API Integration',
+        'Cloud Solutions',
+        'Database Design',
+        'System Architecture'
+      ],
+      bgColor: 'bg-gradient-to-br from-emerald-100 to-teal-100'
     },
     {
       title: 'Tally Solutions',
       description: 'Official Tally solutions and support',
-      icon: <Database className="w-12 h-12 mb-4 text-indigo-500" />,
-      link: '/tally-partner'
+      icon: <Database className="w-12 h-12 mb-4 text-amber-600" />,
+      features: [
+        'Implementation & Setup',
+        'Customization',
+        'Data Migration',
+        'User Training',
+        'Technical Support',
+        'Performance Optimization'
+      ],
+      bgColor: 'bg-gradient-to-br from-amber-100 to-orange-100'
     }
   ];
 
@@ -166,7 +196,7 @@ function HomePage() {
       </section>
 
       {/* Services Section */}
-      <section id="services" className="py-20 bg-gradient-to-b from-blue-50 to-indigo-50">
+      <section id="services" className="py-20 bg-gradient-to-b from-gray-100 to-white">
         <div className="container mx-auto px-4">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -188,18 +218,18 @@ function HomePage() {
               viewport={{ once: true }}
               className="relative group"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-blue-600/20 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
               <a 
                 href="https://advisory.finaccosolutions.com/"
                 target="_blank"
                 rel="noopener noreferrer" 
-                className="relative block bg-gradient-to-br from-indigo-900/90 to-blue-900/90 p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl border border-indigo-500/20"
+                className="relative block bg-white/95 backdrop-blur-sm p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-2xl font-bold text-white">Finacco Advisory</h3>
-                  <ExternalLink className="w-6 h-6 text-indigo-400" />
+                  <h3 className="text-2xl font-bold">Finacco Advisory</h3>
+                  <ExternalLink className="w-6 h-6 text-indigo-600" />
                 </div>
-                <p className="text-indigo-100 mb-6">
+                <p className="text-gray-600 mb-6">
                   Expert financial advisory services including tax planning, auditing, and business consulting.
                 </p>
               </a>
@@ -212,18 +242,18 @@ function HomePage() {
               viewport={{ once: true }}
               className="relative group"
             >
-              <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-blue-600/20 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
               <a 
                 href="https://connect.finaccosolutions.com/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="relative block bg-gradient-to-br from-indigo-900/90 to-blue-900/90 p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl border border-indigo-500/20"
+                className="relative block bg-white/95 backdrop-blur-sm p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
               >
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-2xl font-bold text-white">Finacco Connect</h3>
-                  <ExternalLink className="w-6 h-6 text-indigo-400" />
+                  <h3 className="text-2xl font-bold">Finacco Connect</h3>
+                  <ExternalLink className="w-6 h-6 text-indigo-600" />
                 </div>
-                <p className="text-indigo-100 mb-6">
+                <p className="text-gray-600 mb-6">
                   Advanced accounting utility software solutions for seamless financial management.
                 </p>
               </a>
@@ -239,27 +269,29 @@ function HomePage() {
                 transition={{ delay: index * 0.1 }}
                 className="relative group"
               >
-                <div className="absolute inset-0 bg-gradient-to-br from-indigo-600/20 to-blue-600/20 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
-                <a
-                  href={service.link}
-                  className="relative block bg-gradient-to-br from-indigo-900/90 to-blue-900/90 p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl border border-indigo-500/20"
-                >
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-2xl font-bold text-white">{service.title}</h3>
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
+                <div className={`relative block ${service.bgColor} p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl`}>
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-2xl font-bold text-gray-900">{service.title}</h3>
                     <motion.div
                       whileHover={{ scale: 1.1 }}
-                      className="bg-indigo-800/50 rounded-full p-2"
+                      className="bg-white/80 backdrop-blur rounded-full p-2 shadow-md"
                     >
-                      <ArrowRight className="w-6 h-6 text-indigo-400" />
+                      {service.icon}
                     </motion.div>
                   </div>
-                  <div className="mb-6">
-                    {service.icon}
-                  </div>
-                  <p className="text-indigo-100">
+                  <p className="text-gray-700 mb-6">
                     {service.description}
                   </p>
-                </a>
+                  <div className="grid grid-cols-2 gap-3">
+                    {service.features.map((feature, i) => (
+                      <div key={i} className="flex items-center space-x-2 text-gray-700 bg-white/50 backdrop-blur rounded-lg p-2">
+                        <CheckCircle className="w-4 h-4 text-green-600" />
+                        <span className="text-sm">{feature}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </motion.div>
             ))}
           </div>
@@ -386,11 +418,6 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
-      <Route path="/services" element={<Services />} />
-      <Route path="/web-design" element={<WebDesign />} />
-      <Route path="/graphic-design" element={<GraphicDesign />} />
-      <Route path="/software-dev" element={<SoftwareDev />} />
-      <Route path="/tally-partner" element={<TallyPartner />} />
     </Routes>
   );
 }
