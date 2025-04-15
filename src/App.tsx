@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ChevronUp,
@@ -12,10 +13,19 @@ import {
   X,
   Phone,
   Mail,
-  MapPin
+  MapPin,
+  ExternalLink,
+  ArrowRight
 } from 'lucide-react';
 
-function App() {
+// Import pages
+import WebDesign from './pages/WebDesign';
+import GraphicDesign from './pages/GraphicDesign';
+import SoftwareDev from './pages/SoftwareDev';
+import TallyPartner from './pages/TallyPartner';
+import Services from './pages/Services';
+
+function HomePage() {
   const [showScrollTop, setShowScrollTop] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -33,18 +43,6 @@ function App() {
   };
 
   const services = [
-    {
-      title: 'Financial Services',
-      description: 'Expert financial advisory services for your business needs',
-      icon: <BarChart3 className="w-12 h-12 mb-4 text-blue-600" />,
-      link: '#'
-    },
-    {
-      title: 'Accounting Utility Software',
-      description: 'Tally import, financial statements, and reconciliation solutions',
-      icon: <Calculator className="w-12 h-12 mb-4 text-blue-600" />,
-      link: '#'
-    },
     {
       title: 'Web Designing',
       description: 'Custom web design solutions for your digital presence',
@@ -64,7 +62,7 @@ function App() {
       link: '/software-dev'
     },
     {
-      title: 'Tally Authorized Partner',
+      title: 'Tally Solutions',
       description: 'Official Tally solutions and support',
       icon: <Database className="w-12 h-12 mb-4 text-blue-600" />,
       link: '/tally-partner'
@@ -72,7 +70,7 @@ function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-blue-50">
       {/* Header */}
       <motion.header 
         initial={{ y: -100 }}
@@ -85,12 +83,10 @@ function App() {
               whileHover={{ scale: 1.05 }}
               className="flex items-center space-x-2"
             >
-              <img 
-                src="https://images.unsplash.com/photo-1633332755192-727a05c4013d?ixlib=rb-1.2.1&auto=format&fit=crop&w=100&h=100&q=80" 
-                alt="FinAcco Logo" 
-                className="w-10 h-10 rounded-full"
-              />
-              <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent">
+              <div className="w-10 h-10 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl">
+                FS
+              </div>
+              <span className="text-2xl font-bold bg-gradient-to-r from-indigo-600 to-blue-600 bg-clip-text text-transparent">
                 FinAcco Solutions
               </span>
             </motion.div>
@@ -110,10 +106,10 @@ function App() {
                   key={item}
                   href={`#${item.toLowerCase()}`}
                   whileHover={{ scale: 1.1 }}
-                  className="relative text-gray-600 hover:text-blue-600 transition-colors group"
+                  className="relative text-gray-600 hover:text-indigo-600 transition-colors group"
                 >
                   {item}
-                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-blue-600 transform scale-x-0 group-hover:scale-x-100 transition-transform" />
+                  <span className="absolute bottom-0 left-0 w-full h-0.5 bg-indigo-600 transform scale-x-0 group-hover:scale-x-100 transition-transform" />
                 </motion.a>
               ))}
             </nav>
@@ -131,7 +127,7 @@ function App() {
                   key={item}
                   href={`#${item.toLowerCase()}`}
                   whileHover={{ x: 10 }}
-                  className="text-gray-600 hover:text-blue-600 transition-colors"
+                  className="text-gray-600 hover:text-indigo-600 transition-colors"
                 >
                   {item}
                 </motion.a>
@@ -143,7 +139,7 @@ function App() {
 
       {/* Hero Section */}
       <section id="home" className="relative min-h-screen flex items-center bg-hero-pattern bg-cover bg-center">
-        <div className="absolute inset-0 bg-gradient-to-r from-blue-900/90 to-blue-700/90" />
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/90 to-blue-800/90" />
         <div className="container mx-auto px-4 relative z-10">
           <motion.div 
             initial={{ opacity: 0, y: 20 }}
@@ -161,7 +157,7 @@ function App() {
               href="#services"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="inline-block bg-white text-blue-600 px-8 py-4 rounded-full font-semibold hover:bg-blue-50 transition-colors text-lg"
+              className="inline-block bg-white text-indigo-600 px-8 py-4 rounded-full font-semibold hover:bg-blue-50 transition-colors text-lg"
             >
               Explore Our Services
             </motion.a>
@@ -170,60 +166,111 @@ function App() {
       </section>
 
       {/* Services Section */}
-      <section id="services" className="py-20 bg-gray-100">
+      <section id="services" className="py-20 bg-gradient-to-b from-blue-50 to-indigo-50">
         <div className="container mx-auto px-4">
-          <motion.h2 
+          <motion.div 
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            className="text-4xl md:text-5xl font-bold text-center mb-16"
+            className="text-center mb-16"
           >
-            Our Services
-          </motion.h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">Our Services</h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Comprehensive solutions to drive your business forward
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Finacco Advisory Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="relative group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
+              <a 
+                href="https://advisory.finaccosolutions.com/"
+                target="_blank"
+                rel="noopener noreferrer" 
+                className="relative block bg-white/95 backdrop-blur-sm p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-2xl font-bold">Finacco Advisory</h3>
+                  <ExternalLink className="w-6 h-6 text-indigo-600" />
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Expert financial advisory services including tax planning, auditing, and business consulting.
+                </p>
+              </a>
+            </motion.div>
+
+            {/* Finacco Connect Card */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="relative group"
+            >
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
+              <a 
+                href="https://connect.finaccosolutions.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative block bg-white/95 backdrop-blur-sm p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-2xl font-bold">Finacco Connect</h3>
+                  <ExternalLink className="w-6 h-6 text-indigo-600" />
+                </div>
+                <p className="text-gray-600 mb-6">
+                  Advanced accounting utility software solutions for seamless financial management.
+                </p>
+              </a>
+            </motion.div>
+
+            {/* Other Services */}
             {services.map((service, index) => (
-              <motion.a 
-                key={index}
-                href={service.link}
+              <motion.div
+                key={service.title}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
-                whileHover={{ 
-                  scale: 1.03,
-                  y: -5,
-                }}
-                className="group bg-white rounded-2xl shadow-lg p-8 transform transition-all duration-300 hover:shadow-2xl"
+                className="relative group"
               >
-                <div className="text-center">
-                  <motion.div
-                    initial={{ scale: 1 }}
-                    whileHover={{ 
-                      scale: 1.2,
-                      transition: { duration: 0.2 }
-                    }}
-                    className="inline-block"
-                  >
+                <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
+                <a
+                  href={service.link}
+                  className="relative block bg-white/95 backdrop-blur-sm p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-2xl font-bold">{service.title}</h3>
+                    <motion.div
+                      whileHover={{ scale: 1.1 }}
+                      className="bg-indigo-100 rounded-full p-2"
+                    >
+                      <ArrowRight className="w-6 h-6 text-indigo-600" />
+                    </motion.div>
+                  </div>
+                  <div className="mb-6">
                     {service.icon}
-                  </motion.div>
-                  <h3 className="text-2xl font-semibold mb-4 group-hover:text-blue-600 transition-colors">
-                    {service.title}
-                  </h3>
+                  </div>
                   <p className="text-gray-600">
                     {service.description}
                   </p>
-                </div>
-              </motion.a>
+                </a>
+              </motion.div>
             ))}
           </div>
         </div>
       </section>
 
       {/* About Section */}
-      <section id="about" className="py-20 relative overflow-hidden">
+      <section id="about" className="py-20 relative overflow-hidden bg-gradient-to-b from-indigo-50 to-blue-50">
         <div className="absolute inset-0 opacity-5">
-          <div className="absolute top-0 left-0 w-96 h-96 bg-blue-600 rounded-full -translate-x-1/2 -translate-y-1/2" />
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-blue-600 rounded-full translate-x-1/2 translate-y-1/2" />
+          <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-600 rounded-full -translate-x-1/2 -translate-y-1/2" />
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-indigo-600 rounded-full translate-x-1/2 translate-y-1/2" />
         </div>
         <div className="container mx-auto px-4 relative">
           <motion.div 
@@ -253,7 +300,7 @@ function App() {
       </section>
 
       {/* Contact Section */}
-      <section id="contact" className="py-20 bg-blue-600">
+      <section id="contact" className="py-20 bg-gradient-to-b from-indigo-900 via-blue-900 to-indigo-900">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -281,7 +328,7 @@ function App() {
                 viewport={{ once: true }}
                 transition={{ delay: index * 0.1 }}
                 whileHover={{ scale: 1.05 }}
-                className="flex flex-col items-center p-6 bg-white rounded-2xl shadow-lg text-blue-600"
+                className="flex flex-col items-center p-6 bg-white/10 backdrop-blur-lg rounded-2xl text-white border border-white/20"
               >
                 {item.icon}
                 <span className="mt-4 font-medium">{item.text}</span>
@@ -296,9 +343,17 @@ function App() {
         href="https://wa.me/1234567890"
         className="fixed bottom-24 right-6 bg-green-500 text-white p-4 rounded-full shadow-lg hover:bg-green-600 transition-colors z-50"
         whileHover={{ scale: 1.1 }}
-        animate={{ y: [0, -10, 0] }}
+        animate={{ 
+          y: [0, -10, 0],
+          rotate: [0, 15, -15, 0]
+        }}
         transition={{ 
           y: { 
+            duration: 2,
+            repeat: Infinity,
+            ease: "easeInOut"
+          },
+          rotate: {
             duration: 1.5,
             repeat: Infinity,
             ease: "easeInOut"
@@ -314,7 +369,7 @@ function App() {
       {/* Scroll to Top Button */}
       <motion.button
         onClick={scrollToTop}
-        className={`fixed bottom-6 right-6 bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-all z-50 ${
+        className={`fixed bottom-6 right-6 bg-indigo-600 text-white p-4 rounded-full shadow-lg hover:bg-indigo-700 transition-all z-50 ${
           showScrollTop ? 'opacity-100' : 'opacity-0 pointer-events-none'
         }`}
         whileHover={{ scale: 1.1 }}
@@ -324,6 +379,19 @@ function App() {
         <ChevronUp className="w-6 h-6" />
       </motion.button>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/services" element={<Services />} />
+      <Route path="/web-design" element={<WebDesign />} />
+      <Route path="/graphic-design" element={<GraphicDesign />} />
+      <Route path="/software-dev" element={<SoftwareDev />} />
+      <Route path="/tally-partner" element={<TallyPartner />} />
+    </Routes>
   );
 }
 
