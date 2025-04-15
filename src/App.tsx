@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Routes, Route } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   ChevronUp,
@@ -41,6 +42,36 @@ function HomePage() {
   };
 
   const services = [
+    {
+      title: 'Finacco Advisory',
+      description: 'Expert financial advisory services including tax planning, auditing, and business consulting',
+      icon: <BarChart3 className="w-12 h-12 mb-4 text-indigo-600" />,
+      features: [
+        'Tax Planning',
+        'Business Consulting',
+        'Audit Services',
+        'Financial Analysis',
+        'Risk Assessment',
+        'Compliance Management'
+      ],
+      bgColor: 'bg-gradient-to-br from-indigo-100 to-blue-100',
+      link: 'https://advisory.finaccosolutions.com/'
+    },
+    {
+      title: 'Finacco Connect',
+      description: 'Advanced accounting utility software solutions for seamless financial management',
+      icon: <Calculator className="w-12 h-12 mb-4 text-violet-600" />,
+      features: [
+        'Cloud Accounting',
+        'Financial Reports',
+        'Inventory Management',
+        'Payroll System',
+        'Bank Integration',
+        'Real-time Analytics'
+      ],
+      bgColor: 'bg-gradient-to-br from-violet-100 to-purple-100',
+      link: 'https://connect.finaccosolutions.com/'
+    },
     {
       title: 'Web Designing',
       description: 'Custom web design solutions for your digital presence',
@@ -168,30 +199,44 @@ function HomePage() {
       </motion.header>
 
       {/* Hero Section */}
-      <section id="home" className="relative min-h-screen flex items-center bg-hero-pattern bg-cover bg-center">
-        <div className="absolute inset-0 bg-gradient-to-r from-indigo-900/90 to-blue-800/90" />
-        <div className="container mx-auto px-4 relative z-10">
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center"
-          >
-            <h1 className="text-4xl md:text-7xl font-bold text-white mb-6 leading-tight">
-              Your Complete Business<br />Solutions Partner
-            </h1>
-            <p className="text-xl md:text-2xl text-blue-100 mb-12 max-w-3xl mx-auto">
-              Empowering businesses with comprehensive financial and technological solutions
-            </p>
-            <motion.a 
-              href="#services"
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="inline-block bg-white text-indigo-600 px-8 py-4 rounded-full font-semibold hover:bg-blue-50 transition-colors text-lg"
+      <section id="home" className="relative min-h-screen pt-20">
+        <div className="container mx-auto px-4 py-12">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <motion.div 
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              className="text-left"
             >
-              Explore Our Services
-            </motion.a>
-          </motion.div>
+              <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6 leading-tight">
+                Your Complete Business Solutions Partner
+              </h1>
+              <p className="text-xl text-gray-600 mb-12">
+                Empowering businesses with comprehensive financial and technological solutions
+              </p>
+              <motion.a 
+                href="#services"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="inline-block bg-gradient-to-r from-indigo-600 to-blue-600 text-white px-8 py-4 rounded-full font-semibold hover:from-indigo-700 hover:to-blue-700 transition-colors text-lg shadow-lg"
+              >
+                Explore Our Services
+              </motion.a>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="relative"
+            >
+              <img 
+                src="https://images.unsplash.com/photo-1504868584819-f8e8b4b6d7e3?ixlib=rb-1.2.1&auto=format&fit=crop&w=1950&q=80" 
+                alt="Business Solutions" 
+                className="rounded-2xl shadow-2xl w-full"
+              />
+              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600/20 to-blue-600/20 rounded-2xl" />
+            </motion.div>
+          </div>
         </div>
       </section>
 
@@ -210,56 +255,7 @@ function HomePage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            {/* Finacco Advisory Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="relative group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
-              <a 
-                href="https://advisory.finaccosolutions.com/"
-                target="_blank"
-                rel="noopener noreferrer" 
-                className="relative block bg-white/95 backdrop-blur-sm p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-2xl font-bold">Finacco Advisory</h3>
-                  <ExternalLink className="w-6 h-6 text-indigo-600" />
-                </div>
-                <p className="text-gray-600 mb-6">
-                  Expert financial advisory services including tax planning, auditing, and business consulting.
-                </p>
-              </a>
-            </motion.div>
-
-            {/* Finacco Connect Card */}
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              className="relative group"
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
-              <a 
-                href="https://connect.finaccosolutions.com/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative block bg-white/95 backdrop-blur-sm p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="text-2xl font-bold">Finacco Connect</h3>
-                  <ExternalLink className="w-6 h-6 text-indigo-600" />
-                </div>
-                <p className="text-gray-600 mb-6">
-                  Advanced accounting utility software solutions for seamless financial management.
-                </p>
-              </a>
-            </motion.div>
-
-            {/* Other Services */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {services.map((service, index) => (
               <motion.div
                 key={service.title}
@@ -270,7 +266,12 @@ function HomePage() {
                 className="relative group"
               >
                 <div className="absolute inset-0 bg-gradient-to-r from-indigo-600 to-blue-600 rounded-2xl transform transition-transform group-hover:scale-[1.02]"></div>
-                <div className={`relative block ${service.bgColor} p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl`}>
+                <a 
+                  href={service.link}
+                  target={service.link ? "_blank" : undefined}
+                  rel={service.link ? "noopener noreferrer" : undefined}
+                  className={`relative block ${service.bgColor} p-8 rounded-2xl transform transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl`}
+                >
                   <div className="flex items-center justify-between mb-6">
                     <h3 className="text-2xl font-bold text-gray-900">{service.title}</h3>
                     <motion.div
@@ -291,7 +292,12 @@ function HomePage() {
                       </div>
                     ))}
                   </div>
-                </div>
+                  {service.link && (
+                    <div className="mt-6 flex justify-end">
+                      <ExternalLink className="w-5 h-5 text-indigo-600" />
+                    </div>
+                  )}
+                </a>
               </motion.div>
             ))}
           </div>
