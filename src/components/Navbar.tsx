@@ -47,7 +47,7 @@ const Navbar: React.FC = () => {
         className={`fixed w-full z-50 transition-all duration-300 ${
           scrolled 
             ? 'bg-blue-900 shadow-md py-2' 
-            : 'bg-blue-800 py-4'
+            : 'bg-transparent backdrop-blur-sm py-4'
         }`}
       >
         <div className="container mx-auto px-4 flex justify-between items-center">
@@ -55,35 +55,19 @@ const Navbar: React.FC = () => {
             <Logo />
           </div>
           
-          {/* Desktop Navigation */}
           <nav className="hidden md:flex space-x-8">
-            <button 
-              onClick={() => scrollToSection('home')} 
-              className="text-gray-100 hover:text-white font-medium transition-colors"
-            >
-              Home
-            </button>
-            <button 
-              onClick={() => scrollToSection('services')} 
-              className="text-gray-100 hover:text-white font-medium transition-colors"
-            >
-              Services
-            </button>
-            <button 
-              onClick={() => scrollToSection('about')} 
-              className="text-gray-100 hover:text-white font-medium transition-colors"
-            >
-              About Us
-            </button>
-            <button 
-              onClick={() => scrollToSection('contact')} 
-              className="text-gray-100 hover:text-white font-medium transition-colors"
-            >
-              Contact
-            </button>
+            {['home', 'services', 'about', 'contact'].map((item) => (
+              <button 
+                key={item}
+                onClick={() => scrollToSection(item)} 
+                className="text-gray-100 hover:text-white font-medium transition-all duration-300 relative group"
+              >
+                {item.charAt(0).toUpperCase() + item.slice(1)}
+                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+              </button>
+            ))}
           </nav>
           
-          {/* Mobile Menu Button */}
           <button
             className="md:hidden text-white focus:outline-none"
             onClick={() => setIsOpen(!isOpen)}
@@ -93,7 +77,6 @@ const Navbar: React.FC = () => {
         </div>
       </header>
       
-      {/* Mobile Navigation */}
       <div
         className={`fixed inset-0 z-40 bg-blue-900 transform ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
@@ -111,37 +94,21 @@ const Navbar: React.FC = () => {
           </button>
         </div>
         <nav className="flex flex-col space-y-6 px-8 py-8">
-          <button 
-            onClick={() => scrollToSection('home')} 
-            className="text-xl text-gray-100 hover:text-white font-medium transition-colors"
-          >
-            Home
-          </button>
-          <button 
-            onClick={() => scrollToSection('services')} 
-            className="text-xl text-gray-100 hover:text-white font-medium transition-colors"
-          >
-            Services
-          </button>
-          <button 
-            onClick={() => scrollToSection('about')} 
-            className="text-xl text-gray-100 hover:text-white font-medium transition-colors"
-          >
-            About Us
-          </button>
-          <button 
-            onClick={() => scrollToSection('contact')} 
-            className="text-xl text-gray-100 hover:text-white font-medium transition-colors"
-          >
-            Contact
-          </button>
+          {['home', 'services', 'about', 'contact'].map((item) => (
+            <button 
+              key={item}
+              onClick={() => scrollToSection(item)} 
+              className="text-xl text-gray-100 hover:text-white font-medium transition-all duration-300 transform hover:translate-x-2"
+            >
+              {item.charAt(0).toUpperCase() + item.slice(1)}
+            </button>
+          ))}
         </nav>
       </div>
 
-      {/* Back to Top Button */}
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-24 right-4 md:bottom-8 md:right-8 bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-30 ${
+        className={`fixed bottom-24 right-4 md:bottom-8 md:right-24 bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-30 hover:bg-blue-700 hover:scale-110 ${
           showScrollTop ? 'opacity-100 visible' : 'opacity-0 invisible'
         }`}
       >
