@@ -20,11 +20,16 @@ interface ChatHistory {
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
 
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  apiKey: OPENAI_API_KEY,
   dangerouslyAllowBrowser: true
 });
+
+// Rate limiting configuration
+const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
+const MAX_REQUESTS_PER_WINDOW = 3;
 
 const TaxAssistant: React.FC = () => {
   const [input, setInput] = useState('');
@@ -32,8 +37,9 @@ const TaxAssistant: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [supabaseError, setSupabaseError] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const requestTimestamps = useRef<number[]>([]);
   
   const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
     ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
@@ -45,21 +51,54 @@ const TaxAssistant: React.FC = () => {
 
   useEffect(() => {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
-      setSupabaseError('Supabase configuration is missing. Please check your environment variables.');
+      setError('Supabase configuration is missing. Please check your environment variables.');
+      return;
+    }
+    if (!OPENAI_API_KEY) {
+      setError('OpenAI API key is missing. Please check your environment variables.');
       return;
     }
     scrollToBottom();
     loadChatHistory();
   }, [messages]);
 
+  const checkRateLimit = (): boolean => {
+    const now = Date.now();
+    // Remove timestamps older than the window
+    requestTimestamps.current = requestTimestamps.current.filter(
+      timestamp => now - timestamp < RATE_LIMIT_WINDOW
+    );
+    
+    if (requestTimestamps.current.length >= MAX_REQUESTS_PER_WINDOW) {
+      const oldestTimestamp = requestTimestamps.current[0];
+      const timeUntilReset = RATE_LIMIT_WINDOW - (now - oldestTimestamp);
+      const minutesUntilReset = Math.ceil(timeUntilReset / 60000);
+      
+      setError(`Rate limit exceeded. Please try again in ${minutesUntilReset} minute${minutesUntilReset > 1 ? 's' : ''}.`);
+      return false;
+    }
+    
+    requestTimestamps.current.push(now);
+    return true;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
     if (!supabase) {
-      setSupabaseError('Cannot save chat history: Supabase is not properly configured.');
+      setError('Cannot save chat history: Supabase is not properly configured.');
+      return;
+    }
+    if (!OPENAI_API_KEY) {
+      setError('OpenAI API key is missing. Please check your environment variables.');
       return;
     }
 
+    if (!checkRateLimit()) {
+      return;
+    }
+
+    setError(null);
     const newMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
@@ -90,37 +129,55 @@ const TaxAssistant: React.FC = () => {
         ]
       });
 
+      if (!completion.choices[0]?.message?.content) {
+        throw new Error('No response received from OpenAI');
+      }
+
       const assistantResponse: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: completion.choices[0].message.content || "I apologize, but I couldn't generate a response. Please try again.",
+        content: completion.choices[0].message.content,
         timestamp: new Date().toISOString(),
       };
 
       const updatedMessages = [...messages, newMessage, assistantResponse];
       setMessages(updatedMessages);
       
-      // Save to Supabase with user_id
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
-        await supabase
+        const { error: supabaseError } = await supabase
           .from('chat_histories')
           .insert([{
             messages: updatedMessages,
             title: input.slice(0, 50) + '...',
             user_id: user.id
           }]);
+          
+        if (supabaseError) {
+          throw new Error(`Failed to save chat history: ${supabaseError.message}`);
+        }
       }
         
     } catch (error) {
       console.error('Error:', error);
-      const errorMessage: Message = {
+      let errorMessage = 'An unexpected error occurred. Please try again later.';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('429') || error.message.includes('quota exceeded')) {
+          errorMessage = 'You have reached the API rate limit. Please try again in a few minutes.';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      setError(errorMessage);
+      const errorResponse: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I apologize, but I encountered an error processing your request. Please try again later.",
+        content: "I apologize, but I'm currently experiencing high demand. Please try again in a few minutes.",
         timestamp: new Date().toISOString(),
       };
-      setMessages(prev => [...prev, errorMessage]);
+      setMessages(prev => [...prev, errorResponse]);
     } finally {
       setIsLoading(false);
     }
@@ -143,7 +200,7 @@ const TaxAssistant: React.FC = () => {
       if (data) setChatHistories(data);
     } catch (error) {
       console.error('Error loading chat history:', error);
-      setSupabaseError('Failed to load chat history. Please try again later.');
+      setError('Failed to load chat history. Please try again later.');
     }
   };
 
@@ -159,16 +216,19 @@ const TaxAssistant: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
 
-      await supabase
+      const { error: deleteError } = await supabase
         .from('chat_histories')
         .delete()
         .eq('user_id', user.id);
+        
+      if (deleteError) throw deleteError;
 
       setMessages([]);
       setChatHistories([]);
+      setError(null);
     } catch (error) {
       console.error('Error clearing chat history:', error);
-      setSupabaseError('Failed to clear chat history. Please try again later.');
+      setError('Failed to clear chat history. Please try again later.');
     }
   };
 
@@ -176,10 +236,10 @@ const TaxAssistant: React.FC = () => {
     <div className="min-h-screen pt-16 bg-gradient-to-br from-gray-50 to-white">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
-          {supabaseError && (
+          {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
               <AlertCircle size={20} />
-              <p>{supabaseError}</p>
+              <p>{error}</p>
             </div>
           )}
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
@@ -282,11 +342,11 @@ const TaxAssistant: React.FC = () => {
                       onChange={(e) => setInput(e.target.value)}
                       placeholder="Ask about GST, Income Tax, or any related queries..."
                       className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={isLoading || !supabase}
+                      disabled={isLoading || !supabase || !OPENAI_API_KEY}
                     />
                     <button
                       type="submit"
-                      disabled={isLoading || !input.trim() || !supabase}
+                      disabled={isLoading || !input.trim() || !supabase || !OPENAI_API_KEY}
                       className="bg-blue-600 text-white rounded-lg px-6 py-2 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send size={20} />
