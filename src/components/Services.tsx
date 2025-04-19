@@ -1,8 +1,18 @@
 import React from 'react';
-import { Briefcase, Calculator, Globe, Code, Database, PenTool } from 'lucide-react';
+import { Briefcase, Calculator, Globe, Code, Database, PenTool, Brain } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const Services: React.FC = () => {
   const services = [
+    {
+      title: "Tax AI Assistant",
+      description: "Intelligent AI-powered assistant for GST and Income Tax queries with accurate, fact-based responses.",
+      icon: Brain,
+      link: "/tax-assistant",
+      gradient: "from-emerald-500 to-teal-600",
+      hoverBg: "group-hover:bg-emerald-50",
+      isInternal: true
+    },
     {
       title: "Finacco Advisory",
       description: "Business consultancy services including GST, income tax, book keeping, TDS, TCS, company & LLP related services.",
@@ -78,17 +88,29 @@ const Services: React.FC = () => {
                     <h3 className="text-xl font-bold mb-3 bg-clip-text text-transparent bg-gradient-to-r group-hover:bg-gradient-to-r from-gray-800 to-gray-600 group-hover:from-blue-600 group-hover:to-purple-600 transition-colors duration-300">{service.title}</h3>
                     <p className="text-base text-gray-600 group-hover:text-gray-700 transition-colors duration-300 flex-grow">{service.description}</p>
                     {service.link && (
-                      <a
-                        href={service.link}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center mt-2 py-2 px-4 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-purple-50 text-gray-700 group-hover:text-blue-600 transition-all duration-300 group-hover:translate-x-2 text-base"
-                      >
-                        Learn More
-                        <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <path d="M5 12h14M12 5l7 7-7 7"/>
-                        </svg>
-                      </a>
+                      service.isInternal ? (
+                        <Link
+                          to={service.link}
+                          className="inline-flex items-center mt-2 py-2 px-4 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-purple-50 text-gray-700 group-hover:text-blue-600 transition-all duration-300 group-hover:translate-x-2 text-base"
+                        >
+                          Try Now
+                          <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                          </svg>
+                        </Link>
+                      ) : (
+                        <a
+                          href={service.link}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center mt-2 py-2 px-4 rounded-lg bg-gradient-to-r from-gray-50 to-gray-100 hover:from-blue-50 hover:to-purple-50 text-gray-700 group-hover:text-blue-600 transition-all duration-300 group-hover:translate-x-2 text-base"
+                        >
+                          Learn More
+                          <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform duration-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <path d="M5 12h14M12 5l7 7-7 7"/>
+                          </svg>
+                        </a>
+                      )
                     )}
                   </div>
                 </div>
