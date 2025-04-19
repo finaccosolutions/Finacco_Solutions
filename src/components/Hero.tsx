@@ -6,7 +6,7 @@ const Hero: React.FC = () => {
       <div className="absolute inset-0 bg-gradient-to-t from-black/5 to-white/5"></div>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.1)_0%,transparent_100%)]"></div>
       <div className="container mx-auto px-4">
-        <div className="flex flex-col md:flex-row items-center">
+        <div className="flex flex-col md:flex-row items-center md:space-x-12">
           <div className="md:w-1/2 mb-10 md:mb-0">
             <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 mb-4 leading-tight">
               Complete <span className="bg-gradient-to-r from-blue-600 to-cyan-500 text-transparent bg-clip-text">Financial</span> & <span className="bg-gradient-to-r from-purple-600 to-pink-500 text-transparent bg-clip-text">Tech</span> Solutions

@@ -108,7 +108,7 @@ const Navbar: React.FC = () => {
 
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-24 right-4 md:right-8 bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-20 hover:bg-blue-700 transform hover:scale-110 ${
+        className={`fixed bottom-8 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-20 hover:bg-blue-700 transform hover:scale-110 ${
           showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
