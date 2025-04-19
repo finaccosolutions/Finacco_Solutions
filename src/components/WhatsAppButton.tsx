@@ -9,7 +9,7 @@ const WhatsAppButton: React.FC = () => {
       href={whatsappUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className="fixed bottom-8 right-4 md:right-8 z-30 transform hover:scale-110 transition-transform duration-300"
+      className="fixed bottom-8 right-24 md:right-28 z-30 transform hover:scale-110 transition-transform duration-300"
       aria-label="Contact us on WhatsApp"
     >
       <div className="bg-[#25D366] text-white p-4 rounded-full shadow-lg hover:shadow-xl transition-shadow duration-300 animate-bounce">

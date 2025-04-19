@@ -60,10 +60,10 @@ const Navbar: React.FC = () => {
               <button 
                 key={item}
                 onClick={() => scrollToSection(item)} 
-                className="text-gray-100 hover:text-white font-medium transition-all duration-300 relative group"
+                className="text-gray-100 hover:text-white font-medium transition-all duration-300 relative group px-4 py-2 rounded-lg hover:bg-white/10"
               >
                 {item.charAt(0).toUpperCase() + item.slice(1)}
-                <span className="absolute bottom-0 left-0 w-full h-0.5 bg-white transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300"></span>
+                <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-white transform -translate-x-1/2 group-hover:w-full transition-all duration-300"></span>
               </button>
             ))}
           </nav>
@@ -98,7 +98,7 @@ const Navbar: React.FC = () => {
             <button 
               key={item}
               onClick={() => scrollToSection(item)} 
-              className="text-xl text-gray-100 hover:text-white font-medium transition-all duration-300 transform hover:translate-x-2"
+              className="text-xl text-gray-100 hover:text-white font-medium transition-all duration-300 transform hover:translate-x-2 hover:bg-white/10 px-4 py-2 rounded-lg"
             >
               {item.charAt(0).toUpperCase() + item.slice(1)}
             </button>
@@ -108,7 +108,7 @@ const Navbar: React.FC = () => {
 
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-8 right-4 md:right-8 bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-30 hover:bg-blue-700 transform hover:scale-110 ${
+        className={`fixed bottom-24 right-4 md:right-8 bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-20 hover:bg-blue-700 transform hover:scale-110 ${
           showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >

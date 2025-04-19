@@ -16,8 +16,16 @@ const Contact: React.FC = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Form submitted:', formData);
-    alert('Thank you for your message! We will get back to you soon.');
+    
+    // Create mailto link with form data
+    const mailtoLink = `mailto:contact@finaccosolutions.com?subject=${encodeURIComponent(formData.subject)}&body=${encodeURIComponent(
+      `Name: ${formData.name}\nEmail: ${formData.email}\n\nMessage:\n${formData.message}`
+    )}`;
+    
+    // Open default email client
+    window.location.href = mailtoLink;
+    
+    // Clear form
     setFormData({
       name: '',
       email: '',
@@ -180,5 +188,3 @@ const Contact: React.FC = () => {
 };
 
 export default Contact;
-
-export default Contact
