@@ -21,7 +21,18 @@ interface ChatHistory {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+const GEMINI_API_KEY = 'AIzaSyAciVmjDXQP0wwtGQ4tm9DfdxebFXm5fbw';
+
+let supabase = null;
+try {
+  if (SUPABASE_URL && SUPABASE_ANON_KEY) {
+    // Validate URL before creating client
+    new URL(SUPABASE_URL); // This will throw if URL is invalid
+    supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  }
+} catch (error) {
+  console.error('Failed to initialize Supabase client:', error);
+}
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
@@ -39,13 +50,9 @@ const TaxAssistant: React.FC = () => {
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useGemini, setUseGemini] = useState(true);
+  const [useGemini, setUseGemini] = useState(false); // Default to OpenAI due to potential Gemini API issues
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
-  
-  const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
-    ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-    : null;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -111,29 +118,34 @@ const TaxAssistant: React.FC = () => {
       let assistantResponse: Message;
 
       if (useGemini) {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            'Authorization': `Bearer ${GEMINI_API_KEY}`
           },
           body: JSON.stringify({
-            contents: [
-              {
-                parts: [
-                  {
-                    text: input
-                  }
-                ]
-              }
-            ]
+            contents: [{
+              parts: [{
+                text: `You are a knowledgeable tax assistant specializing in Indian GST and Income Tax. 
+                Please provide accurate, fact-based responses about the following query: ${input}`
+              }]
+            }]
           })
         });
 
         if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error('Gemini API endpoint not found. Switching to OpenAI...');
+          }
           throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
         }
 
         const data = await response.json();
+        if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+          throw new Error('Invalid response format from Gemini API');
+        }
+
         const text = data.candidates[0].content.parts[0].text;
 
         assistantResponse = {
@@ -196,7 +208,10 @@ const TaxAssistant: React.FC = () => {
       let errorMessage = 'An unexpected error occurred. Please try again later.';
       
       if (error instanceof Error) {
-        if (error.message.includes('429') || error.message.includes('quota exceeded')) {
+        if (error.message.includes('404') || error.message.includes('not found')) {
+          setUseGemini(false); // Automatically switch to OpenAI
+          errorMessage = 'Gemini API is not available. Switched to OpenAI. Please try your question again.';
+        } else if (error.message.includes('429') || error.message.includes('quota exceeded')) {
           errorMessage = 'You have reached the API rate limit. Please try again in a few minutes.';
         } else {
           errorMessage = error.message;
@@ -207,7 +222,7 @@ const TaxAssistant: React.FC = () => {
       const errorResponse: Message = {
         id: (Date.now() + 1).toString(),
         role: 'assistant',
-        content: "I apologize, but I'm currently experiencing high demand. Please try again in a few minutes.",
+        content: "I apologize, but I'm currently experiencing technical difficulties. Please try again in a few minutes.",
         timestamp: new Date().toISOString(),
       };
       setMessages(prev => [...prev, errorResponse]);
