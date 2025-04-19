@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X, ChevronUp } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
 import Logo from './Logo';
 
 const Navbar: React.FC = () => {
@@ -44,10 +44,10 @@ const Navbar: React.FC = () => {
   return (
     <>
       <header 
-        className={`fixed w-full z-50 transition-all duration-300 ${
+        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
           scrolled 
-            ? 'bg-blue-900 shadow-md py-2' 
-            : 'bg-transparent backdrop-blur-sm py-4'
+            ? 'bg-gradient-to-r from-blue-900 to-indigo-900 shadow-md py-2' 
+            : 'bg-gradient-to-r from-blue-800 to-indigo-800 py-4'
         }`}
       >
         <div className="container mx-auto px-4 flex justify-between items-center">
@@ -78,7 +78,7 @@ const Navbar: React.FC = () => {
       </header>
       
       <div
-        className={`fixed inset-0 z-40 bg-blue-900 transform ${
+        className={`fixed inset-0 z-40 bg-gradient-to-r from-blue-900 to-indigo-900 transform ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         } transition-transform duration-300 ease-in-out md:hidden`}
       >
@@ -108,11 +108,13 @@ const Navbar: React.FC = () => {
 
       <button
         onClick={scrollToTop}
-        className={`fixed bottom-24 right-4 md:bottom-8 md:right-24 bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-30 hover:bg-blue-700 hover:scale-110 ${
-          showScrollTop ? 'opacity-100 visible' : 'opacity-0 invisible'
+        className={`fixed bottom-8 right-4 md:right-8 bg-blue-600 text-white p-3 rounded-full shadow-lg transition-all duration-300 z-30 hover:bg-blue-700 transform hover:scale-110 ${
+          showScrollTop ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
         }`}
       >
-        <ChevronUp size={24} />
+        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+        </svg>
       </button>
     </>
   );
