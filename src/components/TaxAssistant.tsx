@@ -3,7 +3,6 @@ import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
 import { Send, Loader2, Brain, History, Trash2, AlertCircle } from 'lucide-react';
 import OpenAI from 'openai';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface Message {
   id: string;
@@ -28,9 +27,6 @@ const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
   dangerouslyAllowBrowser: true
 });
-
-const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
@@ -115,9 +111,30 @@ const TaxAssistant: React.FC = () => {
       let assistantResponse: Message;
 
       if (useGemini) {
-        const result = await model.generateContent(input);
-        const response = await result.response;
-        const text = response.text();
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: input
+                  }
+                ]
+              }
+            ]
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error(`Gemini API error: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        const text = data.candidates[0].content.parts[0].text;
 
         assistantResponse = {
           id: (Date.now() + 1).toString(),
