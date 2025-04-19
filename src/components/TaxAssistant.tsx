@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
-import { Send, Loader2, Brain, History, Trash2 } from 'lucide-react';
+import { Send, Loader2, Brain, History, Trash2, AlertCircle } from 'lucide-react';
 import OpenAI from 'openai';
 
 interface Message {
@@ -18,6 +18,9 @@ interface ChatHistory {
   timestamp: string;
 }
 
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 const openai = new OpenAI({
   apiKey: import.meta.env.VITE_OPENAI_API_KEY,
   dangerouslyAllowBrowser: true
@@ -29,18 +32,22 @@ const TaxAssistant: React.FC = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [supabaseError, setSupabaseError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
-  const supabase = createClient(
-    import.meta.env.VITE_SUPABASE_URL || '',
-    import.meta.env.VITE_SUPABASE_ANON_KEY || ''
-  );
+  const supabase = SUPABASE_URL && SUPABASE_ANON_KEY
+    ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
+    if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
+      setSupabaseError('Supabase configuration is missing. Please check your environment variables.');
+      return;
+    }
     scrollToBottom();
     loadChatHistory();
   }, [messages]);
@@ -48,6 +55,10 @@ const TaxAssistant: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
+    if (!supabase) {
+      setSupabaseError('Cannot save chat history: Supabase is not properly configured.');
+      return;
+    }
 
     const newMessage: Message = {
       id: Date.now().toString(),
@@ -68,7 +79,7 @@ const TaxAssistant: React.FC = () => {
       If you're not completely sure about something, say so and recommend consulting a tax professional.`;
 
       const completion = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: "gpt-3.5-turbo",
         messages: [
           { role: "system", content: systemPrompt },
           ...messages.map(msg => ({
@@ -116,6 +127,8 @@ const TaxAssistant: React.FC = () => {
   };
 
   const loadChatHistory = async () => {
+    if (!supabase) return;
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -130,6 +143,7 @@ const TaxAssistant: React.FC = () => {
       if (data) setChatHistories(data);
     } catch (error) {
       console.error('Error loading chat history:', error);
+      setSupabaseError('Failed to load chat history. Please try again later.');
     }
   };
 
@@ -139,6 +153,8 @@ const TaxAssistant: React.FC = () => {
   };
 
   const clearChat = async () => {
+    if (!supabase) return;
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) return;
@@ -152,6 +168,7 @@ const TaxAssistant: React.FC = () => {
       setChatHistories([]);
     } catch (error) {
       console.error('Error clearing chat history:', error);
+      setSupabaseError('Failed to clear chat history. Please try again later.');
     }
   };
 
@@ -159,6 +176,12 @@ const TaxAssistant: React.FC = () => {
     <div className="min-h-screen pt-16 bg-gradient-to-br from-gray-50 to-white">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
+          {supabaseError && (
+            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+              <AlertCircle size={20} />
+              <p>{supabaseError}</p>
+            </div>
+          )}
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
             <div className="flex h-[calc(100vh-8rem)]">
               {/* Sidebar */}
@@ -259,11 +282,11 @@ const TaxAssistant: React.FC = () => {
                       onChange={(e) => setInput(e.target.value)}
                       placeholder="Ask about GST, Income Tax, or any related queries..."
                       className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={isLoading}
+                      disabled={isLoading || !supabase}
                     />
                     <button
                       type="submit"
-                      disabled={isLoading || !input.trim()}
+                      disabled={isLoading || !input.trim() || !supabase}
                       className="bg-blue-600 text-white rounded-lg px-6 py-2 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send size={20} />
