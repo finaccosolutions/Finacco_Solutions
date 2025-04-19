@@ -3,6 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
 import { Send, Loader2, Brain, History, Trash2, AlertCircle } from 'lucide-react';
 import OpenAI from 'openai';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 interface Message {
   id: string;
@@ -21,11 +22,15 @@ interface ChatHistory {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 const openai = new OpenAI({
   apiKey: OPENAI_API_KEY,
   dangerouslyAllowBrowser: true
 });
+
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
 // Rate limiting configuration
 const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
@@ -38,6 +43,7 @@ const TaxAssistant: React.FC = () => {
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [useGemini, setUseGemini] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
   
@@ -54,8 +60,8 @@ const TaxAssistant: React.FC = () => {
       setError('Supabase configuration is missing. Please check your environment variables.');
       return;
     }
-    if (!OPENAI_API_KEY) {
-      setError('OpenAI API key is missing. Please check your environment variables.');
+    if (!OPENAI_API_KEY && !GEMINI_API_KEY) {
+      setError('API keys are missing. Please check your environment variables.');
       return;
     }
     scrollToBottom();
@@ -64,7 +70,6 @@ const TaxAssistant: React.FC = () => {
 
   const checkRateLimit = (): boolean => {
     const now = Date.now();
-    // Remove timestamps older than the window
     requestTimestamps.current = requestTimestamps.current.filter(
       timestamp => now - timestamp < RATE_LIMIT_WINDOW
     );
@@ -89,10 +94,6 @@ const TaxAssistant: React.FC = () => {
       setError('Cannot save chat history: Supabase is not properly configured.');
       return;
     }
-    if (!OPENAI_API_KEY) {
-      setError('OpenAI API key is missing. Please check your environment variables.');
-      return;
-    }
 
     if (!checkRateLimit()) {
       return;
@@ -111,34 +112,49 @@ const TaxAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
-      const systemPrompt = `You are a knowledgeable tax assistant specializing in Indian GST and Income Tax. 
-      Provide accurate, fact-based responses with examples where appropriate. 
-      Format your responses using markdown for better readability.
-      Always cite relevant sections of tax laws when applicable.
-      If you're not completely sure about something, say so and recommend consulting a tax professional.`;
+      let assistantResponse: Message;
 
-      const completion = await openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages.map(msg => ({
-            role: msg.role as 'user' | 'assistant',
-            content: msg.content
-          })),
-          { role: "user", content: input }
-        ]
-      });
+      if (useGemini) {
+        const result = await model.generateContent(input);
+        const response = await result.response;
+        const text = response.text();
 
-      if (!completion.choices[0]?.message?.content) {
-        throw new Error('No response received from OpenAI');
+        assistantResponse = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: text,
+          timestamp: new Date().toISOString(),
+        };
+      } else {
+        const systemPrompt = `You are a knowledgeable tax assistant specializing in Indian GST and Income Tax. 
+        Provide accurate, fact-based responses with examples where appropriate. 
+        Format your responses using markdown for better readability.
+        Always cite relevant sections of tax laws when applicable.
+        If you're not completely sure about something, say so and recommend consulting a tax professional.`;
+
+        const completion = await openai.chat.completions.create({
+          model: "gpt-3.5-turbo",
+          messages: [
+            { role: "system", content: systemPrompt },
+            ...messages.map(msg => ({
+              role: msg.role as 'user' | 'assistant',
+              content: msg.content
+            })),
+            { role: "user", content: input }
+          ]
+        });
+
+        if (!completion.choices[0]?.message?.content) {
+          throw new Error('No response received from OpenAI');
+        }
+
+        assistantResponse = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: completion.choices[0].message.content,
+          timestamp: new Date().toISOString(),
+        };
       }
-
-      const assistantResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'assistant',
-        content: completion.choices[0].message.content,
-        timestamp: new Date().toISOString(),
-      };
 
       const updatedMessages = [...messages, newMessage, assistantResponse];
       setMessages(updatedMessages);
@@ -282,7 +298,19 @@ const TaxAssistant: React.FC = () => {
                       </div>
                       <div>
                         <h1 className="text-xl font-bold text-gray-800">Tax Assistant AI</h1>
-                        <p className="text-sm text-gray-500">Ask me anything about GST and Income Tax</p>
+                        <div className="flex items-center space-x-2">
+                          <p className="text-sm text-gray-500">Using:</p>
+                          <button
+                            onClick={() => setUseGemini(!useGemini)}
+                            className={`text-sm px-2 py-1 rounded ${
+                              useGemini
+                                ? 'bg-blue-100 text-blue-700'
+                                : 'bg-gray-100 text-gray-700'
+                            }`}
+                          >
+                            {useGemini ? 'Gemini' : 'GPT-3.5'}
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -342,11 +370,11 @@ const TaxAssistant: React.FC = () => {
                       onChange={(e) => setInput(e.target.value)}
                       placeholder="Ask about GST, Income Tax, or any related queries..."
                       className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={isLoading || !supabase || !OPENAI_API_KEY}
+                      disabled={isLoading || !supabase || (!OPENAI_API_KEY && !GEMINI_API_KEY)}
                     />
                     <button
                       type="submit"
-                      disabled={isLoading || !input.trim() || !supabase || !OPENAI_API_KEY}
+                      disabled={isLoading || !input.trim() || !supabase || (!OPENAI_API_KEY && !GEMINI_API_KEY)}
                       className="bg-blue-600 text-white rounded-lg px-6 py-2 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send size={20} />
