@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
-import { Send, Loader2, Brain, History, Trash2, AlertCircle, LogOut, X, Plus, Home, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
-import OpenAI from 'openai';
+import { Send, Loader2, Brain, Trash2, AlertCircle, LogOut, X, Plus, Home, MessageSquare, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import Auth from './Auth';
 import { Link } from 'react-router-dom';
 
@@ -278,10 +277,29 @@ const TaxAssistant: React.FC = () => {
   const [useGemini, setUseGemini] = useState(true);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [typingMessage, setTypingMessage] = useState<Message | null>(null);
+  const [textareaHeight, setTextareaHeight] = useState('56px');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
   const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  const adjustTextareaHeight = () => {
+    const textarea = textareaRef.current;
+    if (textarea) {
+      textarea.style.height = 'auto';
+      textarea.style.height = `${Math.min(textarea.scrollHeight, 200)}px`;
+    }
+  };
+
+  useEffect(() => {
+    if (!input) {
+      const textarea = textareaRef.current;
+      if (textarea) {
+        textarea.style.height = '56px';
+      }
+    }
+  }, [input]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -414,7 +432,6 @@ const TaxAssistant: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
-    // Create typing indicator message
     const typingIndicator: Message = {
       id: (Date.now() + 1).toString(),
       role: 'assistant',
@@ -426,11 +443,9 @@ const TaxAssistant: React.FC = () => {
     setTypingMessage(typingIndicator);
 
     try {
-      // Check for Finacco-related queries first
       const finaccoResponse = getFinaccoResponse(input);
       
       if (finaccoResponse) {
-        // Simulate typing effect for Finacco responses
         let displayedContent = '';
         const words = finaccoResponse.split(' ');
         
@@ -455,12 +470,10 @@ const TaxAssistant: React.FC = () => {
         const updatedMessages = [...messages, newMessage, assistantResponse];
         setMessages(updatedMessages);
         
-        // Save to chat history
         await saveToHistory(updatedMessages, input);
         return;
       }
 
-      // Handle AI responses
       if (useGemini) {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
           method: 'POST',
@@ -493,7 +506,6 @@ const TaxAssistant: React.FC = () => {
           throw new Error('Invalid response format from Gemini API');
         }
 
-        // Add typing effect for Gemini response
         let displayedContent = '';
         const words = data.candidates[0].content.parts[0].text.split(' ');
         
@@ -546,7 +558,6 @@ const TaxAssistant: React.FC = () => {
           throw new Error('No response received from OpenAI');
         }
 
-        // Add typing effect for OpenAI response
         let displayedContent = '';
         const words = completion.choices[0].message.content.split(' ');
         
@@ -705,9 +716,9 @@ const TaxAssistant: React.FC = () => {
           <div className="flex items-center gap-4">
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
+              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
             >
-              <MessageSquare size={24} />
+              {showHistory ? <PanelLeftClose size={24} /> : <PanelLeftOpen size={24} />}
             </button>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
@@ -719,14 +730,14 @@ const TaxAssistant: React.FC = () => {
           <div className="flex items-center gap-2">
             <button
               onClick={createNewChat}
-              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
+              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
               title="New Chat"
             >
               <Plus size={20} />
             </button>
             <button
               onClick={handleSignOut}
-              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
+              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
               title="Sign out"
             >
               <LogOut size={20} />
@@ -736,77 +747,74 @@ const TaxAssistant: React.FC = () => {
       </div>
 
       {/* History Panel */}
-      {showHistory && (
-        <div className="fixed md:relative inset-y-0 left-0 w-80 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-40">
-          <div className="flex flex-col h-full pt-16 md:pt-4">
-            <div className="flex items-center justify-between px-4 py-2">
-              <h2 className="text-lg font-semibold text-gray-700">Chat History</h2>
-              <button
-                onClick={() => setShowHistory(false)}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
-              >
-                <ChevronLeft size={20} />
-              </button>
-            </div>
-            
-            <div className="flex gap-2 px-4 py-2">
-              <button
-                onClick={() => {
-                  createNewChat();
-                  setShowHistory(false);
-                }}
-                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2"
-              >
-                <Plus size={18} />
-                <span>New Chat</span>
-              </button>
-            </div>
+      <div 
+        className={`fixed md:relative inset-y-0 left-0 transform transition-transform duration-300 ease-in-out z-40 flex ${
+          showHistory ? 'translate-x-0' : '-translate-x-[calc(100%-2.5rem)] md:-translate-x-[calc(100%-2.5rem)]'
+        }`}
+      >
+        {/* Main History Panel */}
+        <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full pt-16 md:pt-4">
+          <div className="flex items-center justify-between px-4 py-2">
+            <h2 className="text-lg font-semibold text-gray-700">Chat History</h2>
+          </div>
+          
+          <div className="flex gap-2 px-4 py-2">
+            <button
+              onClick={() => {
+                createNewChat();
+                setShowHistory(false);
+              }}
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105"
+            >
+              <Plus size={18} />
+              <span>New Chat</span>
+            </button>
+          </div>
 
-            <div className="flex-1 overflow-y-auto px-4 py-2">
-              {chatHistories.map((chat) => (
-                <div
-                  key={chat.id}
-                  onClick={() => loadChat(chat)}
-                  className={`group relative bg-white hover:bg-gray-50 p-4 rounded-lg cursor-pointer transition-all duration-300 border mb-2 ${
-                    currentChatId === chat.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-blue-100'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <MessageSquare size={20} className={`${currentChatId === chat.id ? 'text-blue-500' : 'text-gray-400'}`} />
-                    <div className="flex-grow min-w-0 pr-8">
-                      <p className="text-sm font-medium text-gray-700 line-clamp-4">{chat.title}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        {new Date(chat.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <button
-                      onClick={(e) => deleteChat(chat.id, e)}
-                      className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
-                    >
-                      <Trash2 size={16} className="text-red-500" />
-                    </button>
+          <div className="flex-1 overflow-y-auto px-4 py-2">
+            {chatHistories.map((chat) => (
+              <div
+                key={chat.id}
+                onClick={() => loadChat(chat)}
+                className={`group relative bg-white hover:bg-gray-50 p-4 rounded-lg cursor-pointer transition-all duration-300 border mb-2 hover:shadow-md ${
+                  currentChatId === chat.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-blue-100'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <MessageSquare size={20} className={`${currentChatId === chat.id ? 'text-blue-500' : 'text-gray-400'} group-hover:scale-110 transition-transform`} />
+                  <div className="flex-grow min-w-0 pr-8">
+                    <p className="text-sm font-medium text-gray-700 line-clamp-4 group-hover:text-blue-600 transition-colors">{chat.title}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(chat.created_at).toLocaleDateString()}
+                    </p>
                   </div>
+                  <button
+                    onClick={(e) => deleteChat(chat.id, e)}
+                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
+                  >
+                    <Trash2 size={16} className="text-red-500" />
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
-      )}
+
+        {/* Toggle Button */}
+        <button
+          onClick={() => setShowHistory(!showHistory)}
+          className="h-10 w-10 bg-white border border-gray-200 rounded-r-lg shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors mt-20 md:mt-8"
+        >
+          {showHistory ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+        </button>
+      </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-screen md:h-full pt-16 md:pt-0">
+      <div className={`flex-1 flex flex-col h-screen md:h-full pt-16 md:pt-0 ${!showHistory ? 'md:ml-0' : ''}`}>
         {/* Desktop Header */}
         <div className="hidden md:block bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 shadow-md">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center gap-3">
-              {!showHistory && (
-                <button
-                  onClick={() => setShowHistory(true)}
-                  className="p-2 text-white/80 hover:text-white hover: bg-white/10 rounded-lg"
-                >
-                  <ChevronRight size={24} />
-                </button>
-              )}
               <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
                 <Brain className="text-white" size={24} />
               </div>
@@ -825,14 +833,14 @@ const TaxAssistant: React.FC = () => {
               </Link>
               <button
                 onClick={clearChat}
-                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
                 title="Clear all chats"
               >
                 <Trash2 size={20} />
               </button>
               <button
                 onClick={handleSignOut}
-                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
                 title="Sign out"
               >
                 <LogOut size={20} />
@@ -908,6 +916,12 @@ const TaxAssistant: React.FC = () => {
                       <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
                     </div>
                   </div>
+                  {typingMessage.content && (
+                    <div
+                      className="prose max-w-none"
+                      dangerouslySetInnerHTML={{ __html: typingMessage.content }}
+                    />
+                  )}
                 </div>
               </div>
             )}
@@ -918,24 +932,36 @@ const TaxAssistant: React.FC = () => {
 
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white">
-          <div className="max-w-7xl mx-auto flex items-center gap-4">
+          <div className="max-w-7xl mx-auto flex items-start gap-4">
             <div className="flex-1 relative">
-              <input
-                type="text"
+              <textarea
+                ref={textareaRef}
                 value={input}
-                onChange={(e) => setInput(e.target.value)}
-                placeholder="Ask me about taxes..."
-                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  adjustTextareaHeight();
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    if (input.trim() && !isLoading) {
+                      handleSubmit(e);
+                    }
+                  }
+                }}
+                placeholder="Ask me about taxes... (Press Enter to send, Shift + Enter for new line)"
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none transition-all duration-300"
+                style={{ minHeight: '56px', maxHeight: '200px' }}
                 disabled={isLoading}
               />
             </div>
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className={`px-6 py-3 rounded-lg flex items-center gap-2 ${
+              className={`px-6 py-3 rounded-lg flex items-center gap-2 transition-all duration-300 transform hover:scale-105 ${
                 isLoading || !input.trim()
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700'
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg'
               }`}
             >
               {isLoading ? (
