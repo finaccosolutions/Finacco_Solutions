@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
-import { Send, Loader2, Brain, Trash2, AlertCircle, LogOut, X, Plus, Home, MessageSquare, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import { Send, Loader2, Brain, Trash2, AlertCircle, LogOut, Menu, Plus, Home, MessageSquare } from 'lucide-react';
 import OpenAI from 'openai';
 import Auth from './Auth';
 import { Link } from 'react-router-dom';
@@ -713,97 +713,89 @@ const TaxAssistant: React.FC = () => {
     <div className="h-screen flex bg-gray-50">
       {/* History Panel */}
       <div 
-        className={`fixed md:relative inset-y-0 left-0 transform transition-transform duration-300 ease-in-out z-40 ${
+        className={`fixed md:relative inset-y-0 left-0 transform ${
           showHistory ? 'translate-x-0' : '-translate-x-[280px]'
-        }`}
+        } transition-transform duration-300 ease-in-out z-40 w-[280px] bg-white border-r border-gray-200 flex flex-col h-full shadow-lg md:shadow-none`}
       >
-        {/* Main History Panel */}
-        <div className="w-[280px] bg-white border-r border-gray-200 flex flex-col h-full">
-          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                <Brain className="text-white" size={20} />
-              </div>
-              <h2 className="text-lg font-semibold">Chat History</h2>
+        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
+              <Brain className="text-white" size={20} />
             </div>
-            <button
-              onClick={() => setShowHistory(false)}
-              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-            >
-              <PanelLeftClose size={20} />
-            </button>
+            <h2 className="text-lg font-semibold">Chat History</h2>
           </div>
-          
-          <div className="flex gap-2 px-4 py-2">
-            <button
-              onClick={() => {
-                createNewChat();
-                setShowHistory(false);
-              }}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105"
-            >
-              <Plus size={18} />
-              <span>New Chat</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setShowHistory(false)}
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <Menu size={20} className="transform rotate-90" />
+          </button>
+        </div>
+        
+        <div className="flex gap-2 px-4 py-2">
+          <button
+            onClick={() => {
+              createNewChat();
+              setShowHistory(false);
+            }}
+            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105"
+          >
+            <Plus size={18} />
+            <span>New Chat</span>
+          </button>
+        </div>
 
-          <div className="flex-1 overflow-y-auto px-4 py-2">
-            {chatHistories.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => loadChat(chat)}
-                className={`group relative bg-white hover:bg-gray-50 p-4 rounded-lg cursor-pointer transition-all duration-300 border mb-2 hover:shadow-md ${
-                  currentChatId === chat.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-blue-100'
-                }`}
-              >
-                <div className="flex items-start gap-3">
-                  <MessageSquare size={20} className={`${currentChatId === chat.id ? 'text-blue-500' : 'text-gray-400'} group-hover:scale-110 transition-transform`} />
-                  <div className="flex-grow min-w-0 pr-8">
-                    <p className="text-sm font-medium text-gray-700 line-clamp-4 group-hover:text-blue-600 transition-colors">{chat.title}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(chat.created_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <button
-                    onClick={(e) => deleteChat(chat.id, e)}
-                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
-                  >
-                    <Trash2 size={16} className="text-red-500" />
-                  </button>
+        <div className="flex-1 overflow-y-auto px-4 py-2">
+          {chatHistories.map((chat) => (
+            <div
+              key={chat.id}
+              onClick={() => loadChat(chat)}
+              className={`group relative bg-white hover:bg-gray-50 p-4 rounded-lg cursor-pointer transition-all duration-300 border mb-2 hover:shadow-md ${
+                currentChatId === chat.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-blue-100'
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <MessageSquare size={20} className={`${currentChatId === chat.id ? 'text-blue-500' : 'text-gray-400'} group-hover:scale-110 transition-transform`} />
+                <div className="flex-grow min-w-0 pr-8">
+                  <p className="text-sm font-medium text-gray-700 line-clamp-4 group-hover:text-blue-600 transition-colors">{chat.title}</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    {new Date(chat.created_at).toLocaleDateString()}
+                  </p>
                 </div>
+                <button
+                  onClick={(e) => deleteChat(chat.id, e)}
+                  className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
+                >
+                  <Trash2 size={16} className="text-red-500" />
+                </button>
               </div>
-            ))}
-          </div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Collapsed History Panel */}
-      {!showHistory && (
-        <div className="fixed left-0 top-1/2 -translate-y-1/2 transform z-40">
-          <button
-            onClick={() => setShowHistory(true)}
-            className="bg-white border border-gray-200 rounded-r-lg shadow-md p-2 hover:bg-gray-50 transition-colors"
-          >
-            <PanelLeftOpen size={20} />
-          </button>
-        </div>
-      )}
-
       {/* Main Chat Area */}
-      <div className={`flex-1 flex flex-col h-screen transition-all duration-300 ${
-        showHistory ? 'md:ml-[280px]' : 'ml-0'
-      }`}>
+      <div className="flex-1 flex flex-col h-screen">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 shadow-md">
-          <div className="flex items-center justify-between max-w-7xl mx-auto">
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md">
+          <div className="flex items-center justify-between p-4">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                <Brain className="text-white" size={24} />
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+              >
+                <Menu size={24} />
+              </button>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
+                  <Brain className="text-white" size={24} />
+                </div>
+                <div>
+                  <h1 className="text-xl font-bold">Tax Assistant AI</h1>
+                  <p className="text-sm text-white/80">{user?.email}</p>
+                </div>
               </div>
-              <div>
-                <h1 className="text-xl font-bold">Tax Assistant AI</h1>
-                <p className="text-sm text-white/80">{user?.email}</p>
-              </div>
+            
             </div>
             <div className="flex items-center gap-2">
               <Link
