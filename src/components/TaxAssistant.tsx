@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
-import { Send, Loader2, Brain, History, Trash2, AlertCircle } from 'lucide-react';
+import { Send, Loader2, Brain, History, Trash2, AlertCircle, LogOut } from 'lucide-react';
 import OpenAI from 'openai';
+import Auth from './Auth';
 
 interface Message {
   id: string;
@@ -15,7 +16,8 @@ interface ChatHistory {
   id: string;
   title: string;
   messages: Message[];
-  timestamp: string;
+  created_at: string;
+  user_id: string;
 }
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
@@ -26,8 +28,7 @@ const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 let supabase = null;
 try {
   if (SUPABASE_URL && SUPABASE_ANON_KEY) {
-    // Validate URL before creating client
-    new URL(SUPABASE_URL); // This will throw if URL is invalid
+    new URL(SUPABASE_URL);
     supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
   }
 } catch (error) {
@@ -39,24 +40,49 @@ const openai = new OpenAI({
   dangerouslyAllowBrowser: true
 });
 
-// Rate limiting configuration
-const RATE_LIMIT_WINDOW = 60000; // 1 minute in milliseconds
+const RATE_LIMIT_WINDOW = 60000;
 const MAX_REQUESTS_PER_WINDOW = 3;
 
 const TaxAssistant: React.FC = () => {
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [user, setUser] = useState(null);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useGemini, setUseGemini] = useState(true); // Default to Gemini since both APIs are available
+  const [useGemini, setUseGemini] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  useEffect(() => {
+    if (!supabase) return;
+    
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setIsAuthenticated(!!session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadChatHistory(session.user.id);
+      }
+    });
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsAuthenticated(!!session);
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        loadChatHistory(session.user.id);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (!SUPABASE_URL || !SUPABASE_ANON_KEY) {
@@ -68,7 +94,6 @@ const TaxAssistant: React.FC = () => {
       return;
     }
     scrollToBottom();
-    loadChatHistory();
   }, [messages]);
 
   const checkRateLimit = (): boolean => {
@@ -90,6 +115,26 @@ const TaxAssistant: React.FC = () => {
     return true;
   };
 
+  const formatResponse = (text: string) => {
+    // Add section headers
+    text = text.replace(/^(Overview|Summary|Details|Important Points|Note|References):/gm, '### $1:');
+    
+    // Convert bullet points to proper markdown
+    text = text.replace(/^[•●○]/gm, '-');
+    
+    // Add table formatting if there's tabular data
+    if (text.includes('|')) {
+      const lines = text.split('\n');
+      const tableStart = lines.findIndex(line => line.includes('|'));
+      if (tableStart !== -1) {
+        lines.splice(tableStart + 1, 0, lines[tableStart].replace(/[^|]/g, '-'));
+        text = lines.join('\n');
+      }
+    }
+    
+    return text;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -98,9 +143,7 @@ const TaxAssistant: React.FC = () => {
       return;
     }
 
-    if (!checkRateLimit()) {
-      return;
-    }
+    if (!checkRateLimit()) return;
 
     setError(null);
     const newMessage: Message = {
@@ -127,6 +170,7 @@ const TaxAssistant: React.FC = () => {
             contents: [{
               parts: [{
                 text: `You are a knowledgeable tax assistant specializing in Indian GST and Income Tax. 
+                Format your response with clear sections, bullet points, and tables where appropriate.
                 Please provide accurate, fact-based responses about the following query: ${input}`
               }]
             }]
@@ -145,7 +189,7 @@ const TaxAssistant: React.FC = () => {
           throw new Error('Invalid response format from Gemini API');
         }
 
-        const text = data.candidates[0].content.parts[0].text;
+        const text = formatResponse(data.candidates[0].content.parts[0].text);
 
         assistantResponse = {
           id: (Date.now() + 1).toString(),
@@ -155,9 +199,12 @@ const TaxAssistant: React.FC = () => {
         };
       } else {
         const systemPrompt = `You are a knowledgeable tax assistant specializing in Indian GST and Income Tax. 
-        Provide accurate, fact-based responses with examples where appropriate. 
-        Format your responses using markdown for better readability.
-        Always cite relevant sections of tax laws when applicable.
+        Format your responses with:
+        - Clear section headers (Overview, Details, Important Points)
+        - Bullet points for key information
+        - Tables for comparative data
+        - Examples where appropriate
+        Always cite relevant sections of tax laws.
         If you're not completely sure about something, say so and recommend consulting a tax professional.`;
 
         const completion = await openai.chat.completions.create({
@@ -176,10 +223,12 @@ const TaxAssistant: React.FC = () => {
           throw new Error('No response received from OpenAI');
         }
 
+        const text = formatResponse(completion.choices[0].message.content);
+
         assistantResponse = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
-          content: completion.choices[0].message.content,
+          content: text,
           timestamp: new Date().toISOString(),
         };
       }
@@ -200,6 +249,8 @@ const TaxAssistant: React.FC = () => {
         if (supabaseError) {
           throw new Error(`Failed to save chat history: ${supabaseError.message}`);
         }
+        
+        loadChatHistory(user.id);
       }
         
     } catch (error) {
@@ -208,7 +259,7 @@ const TaxAssistant: React.FC = () => {
       
       if (error instanceof Error) {
         if (error.message.includes('404') || error.message.includes('not found')) {
-          setUseGemini(false); // Automatically switch to OpenAI
+          setUseGemini(false);
           errorMessage = 'Gemini API is not available. Switched to OpenAI. Please try your question again.';
         } else if (error.message.includes('429') || error.message.includes('quota exceeded')) {
           errorMessage = 'You have reached the API rate limit. Please try again in a few minutes.';
@@ -230,17 +281,14 @@ const TaxAssistant: React.FC = () => {
     }
   };
 
-  const loadChatHistory = async () => {
+  const loadChatHistory = async (userId: string) => {
     if (!supabase) return;
     
     try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
       const { data, error } = await supabase
         .from('chat_histories')
         .select('*')
-        .eq('user_id', user.id)
+        .eq('user_id', userId)
         .order('created_at', { ascending: false });
         
       if (error) throw error;
@@ -279,10 +327,21 @@ const TaxAssistant: React.FC = () => {
     }
   };
 
+  const handleSignOut = async () => {
+    if (!supabase) return;
+    await supabase.auth.signOut();
+    setMessages([]);
+    setChatHistories([]);
+  };
+
+  if (!isAuthenticated) {
+    return <Auth onAuthSuccess={() => setIsAuthenticated(true)} />;
+  }
+
   return (
-    <div className="min-h-screen pt-16 bg-gradient-to-br from-gray-50 to-white">
-      <div className="container mx-auto px-4 py-8">
-        <div className="max-w-6xl mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
+      <div className="container mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto">
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
               <AlertCircle size={20} />
@@ -290,7 +349,7 @@ const TaxAssistant: React.FC = () => {
             </div>
           )}
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-            <div className="flex h-[calc(100vh-8rem)]">
+            <div className="flex h-[calc(100vh-2rem)]">
               {/* Sidebar */}
               <div className={`w-80 bg-gray-50 border-r border-gray-200 flex-shrink-0 ${showHistory ? '' : 'hidden'} md:block`}>
                 <div className="p-4">
@@ -311,7 +370,7 @@ const TaxAssistant: React.FC = () => {
                         className="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors"
                       >
                         <p className="text-sm font-medium text-gray-700 truncate">{chat.title}</p>
-                        <p className="text-xs text-gray-500">{new Date(chat.timestamp).toLocaleDateString()}</p>
+                        <p className="text-xs text-gray-500">{new Date(chat.created_at).toLocaleDateString()}</p>
                       </button>
                     ))}
                   </div>
@@ -329,19 +388,7 @@ const TaxAssistant: React.FC = () => {
                       </div>
                       <div>
                         <h1 className="text-xl font-bold text-gray-800">Tax Assistant AI</h1>
-                        <div className="flex items-center space-x-2">
-                          <p className="text-sm text-gray-500">Using:</p>
-                          <button
-                            onClick={() => setUseGemini(!useGemini)}
-                            className={`text-sm px-2 py-1 rounded ${
-                              useGemini
-                                ? 'bg-blue-100 text-blue-700'
-                                : 'bg-gray-100 text-gray-700'
-                            }`}
-                          >
-                            {useGemini ? 'Gemini' : 'GPT-3.5'}
-                          </button>
-                        </div>
+                        <p className="text-sm text-gray-500">{user?.email}</p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
@@ -358,25 +405,46 @@ const TaxAssistant: React.FC = () => {
                       >
                         <Trash2 size={20} />
                       </button>
+                      <button
+                        onClick={handleSignOut}
+                        className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
+                        title="Sign out"
+                      >
+                        <LogOut size={20} />
+                      </button>
                     </div>
                   </div>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-4 space-y-4">
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
                   {messages.map((message) => (
                     <div
                       key={message.id}
                       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-[80%] rounded-lg p-4 ${
+                        className={`max-w-3xl rounded-lg p-6 ${
                           message.role === 'user'
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-100 text-gray-800'
                         }`}
                       >
-                        <ReactMarkdown className="prose prose-sm max-w-none">
+                        <ReactMarkdown 
+                          className={`prose ${message.role === 'user' ? 'prose-invert' : 'prose-blue'} max-w-none`}
+                          components={{
+                            h3: ({node, ...props}) => <h3 className="text-lg font-bold mb-2" {...props} />,
+                            ul: ({node, ...props}) => <ul className="list-disc pl-4 space-y-1" {...props} />,
+                            li: ({node, ...props}) => <li className="text-base" {...props} />,
+                            table: ({node, ...props}) => (
+                              <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200" {...props} />
+                              </div>
+                            ),
+                            th: ({node, ...props}) => <th className="px-4 py-2 bg-gray-50 font-semibold" {...props} />,
+                            td: ({node, ...props}) => <td className="px-4 py-2 border-t" {...props} />
+                          }}
+                        >
                           {message.content}
                         </ReactMarkdown>
                       </div>
@@ -384,7 +452,7 @@ const TaxAssistant: React.FC = () => {
                   ))}
                   {isLoading && (
                     <div className="flex justify-start">
-                      <div className="bg-gray-100 rounded-lg p-4">
+                      <div className="bg-gray-100 rounded-lg p-6">
                         <Loader2 className="animate-spin" size={24} />
                       </div>
                     </div>
@@ -400,13 +468,13 @@ const TaxAssistant: React.FC = () => {
                       value={input}
                       onChange={(e) => setInput(e.target.value)}
                       placeholder="Ask about GST, Income Tax, or any related queries..."
-                      className="flex-1 rounded-lg border border-gray-300 px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
                       disabled={isLoading || !supabase || (!OPENAI_API_KEY && !GEMINI_API_KEY)}
                     />
                     <button
                       type="submit"
                       disabled={isLoading || !input.trim() || !supabase || (!OPENAI_API_KEY && !GEMINI_API_KEY)}
-                      className="bg-blue-600 text-white rounded-lg px-6 py-2 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      className="bg-blue-600 text-white rounded-lg px-6 py-3 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Send size={20} />
                     </button>
