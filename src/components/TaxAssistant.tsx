@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
-import { Send, Loader2, Brain, History, Trash2, AlertCircle, LogOut, X, Plus, Home, MessageSquare } from 'lucide-react';
+import { Send, Loader2, Brain, History, Trash2, AlertCircle, LogOut, X, Plus, Home, MessageSquare, Menu } from 'lucide-react';
 import OpenAI from 'openai';
 import Auth from './Auth';
 import { Link } from 'react-router-dom';
@@ -145,6 +145,125 @@ const formatResponse = (text: string) => {
   return text;
 };
 
+const getFinaccoResponse = (query: string) => {
+  const lowerQuery = query.toLowerCase();
+  
+  // Company overview
+  if (lowerQuery.includes('about finacco') || lowerQuery.includes('company information') || lowerQuery.includes('finacco solutions')) {
+    return `
+**About Finacco Solutions**
+
+Finacco Solutions is a comprehensive financial and technology services provider offering:
+
+* Financial Services:
+  - GST Registration and Returns
+  - Income Tax Filing
+  - Business Consultancy
+  - Company & LLP Services
+  - TDS/TCS Services
+  - Bookkeeping Services
+
+* Technology Solutions:
+  - Tally Prime Solutions
+  - Data Import Tools
+  - Financial Statement Preparation
+  - Bank Reconciliation Tools
+  - Custom Software Development
+  - Web Development Services
+
+**Contact Information:**
+* Phone: +91 8590000761
+* Email: contact@finaccosolutions.com
+* Location: Mecca Tower, 2nd Floor, Court Road, Near Sree Krishna Theatre, Manjeri, Kerala-676521
+
+**Business Hours:**
+* Monday - Saturday: 9:30 AM - 6:00 PM
+* Sunday: Closed
+
+Visit our service platforms:
+* [Finacco Advisory](https://advisory.finaccosolutions.com) - For all financial advisory services
+* [Finacco Connect](https://connect.finaccosolutions.com) - For business utility software and Tally solutions
+`;
+  }
+
+  // Contact information
+  if (lowerQuery.includes('contact') || lowerQuery.includes('phone') || lowerQuery.includes('email') || lowerQuery.includes('address')) {
+    return `
+**Contact Information for Finacco Solutions:**
+
+* Phone: +91 8590000761
+* Email: contact@finaccosolutions.com
+* Address: Mecca Tower, 2nd Floor, Court Road, Near Sree Krishna Theatre, Manjeri, Kerala-676521
+
+**Office Hours:**
+* Monday - Saturday: 9:30 AM - 6:00 PM
+* Sunday: Closed
+
+Feel free to reach out to us through WhatsApp or email for quick responses.
+`;
+  }
+
+  // Finacco Connect services
+  if (lowerQuery.includes('tally') || lowerQuery.includes('import') || lowerQuery.includes('connect') || lowerQuery.includes('utility software')) {
+    return `
+**Finacco Connect Services:**
+
+Visit [Finacco Connect](https://connect.finaccosolutions.com) for:
+* Tally Prime Solutions
+  - Sales and Implementation
+  - Training and Support
+  - Customization Services
+* Data Import Tools
+  - Bank Statement Import
+  - Tally Data Migration
+  - Excel to Tally Integration
+* Financial Statement Preparation
+* Bank Reconciliation Tools
+* Business Utility Software
+
+For detailed information or support:
+* Phone: +91 8590000761
+* Email: contact@finaccosolutions.com
+`;
+  }
+
+  // Finacco Advisory services
+  if (lowerQuery.includes('gst') || lowerQuery.includes('income tax') || lowerQuery.includes('advisory') || lowerQuery.includes('financial services')) {
+    return `
+**Finacco Advisory Services:**
+
+Visit [Finacco Advisory](https://advisory.finaccosolutions.com) for:
+
+* GST Services:
+  - Registration
+  - Monthly/Quarterly Returns
+  - Annual Returns
+  - GST Audit Support
+  - E-way Bill Services
+
+* Income Tax Services:
+  - Individual Tax Filing
+  - Business Tax Returns
+  - Tax Planning
+  - TDS Returns
+  - Form 16/16A Generation
+
+* Business Services:
+  - Company Registration
+  - LLP Formation
+  - Business Consultancy
+  - Bookkeeping Services
+  - Financial Advisory
+
+Contact us for professional assistance:
+* Phone: +91 8590000761
+* Email: contact@finaccosolutions.com
+`;
+  }
+
+  return null;
+};
+
 const TaxAssistant: React.FC = () => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState(null);
@@ -249,8 +368,53 @@ const TaxAssistant: React.FC = () => {
     setIsLoading(true);
 
     try {
-      let assistantResponse: Message;
+      // Check for Finacco-related queries first
+      const finaccoResponse = getFinaccoResponse(input);
+      
+      if (finaccoResponse) {
+        const assistantResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: formatResponse(finaccoResponse),
+          timestamp: new Date().toISOString(),
+          name: 'Finacco Solutions'
+        };
+        
+        const updatedMessages = [...messages, newMessage, assistantResponse];
+        setMessages(updatedMessages);
+        
+        // Save to chat history
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          if (currentChatId) {
+            await supabase
+              .from('chat_histories')
+              .update({
+                messages: updatedMessages,
+              })
+              .eq('id', currentChatId);
+          } else {
+            const { data: newChat } = await supabase
+              .from('chat_histories')
+              .insert([{
+                messages: updatedMessages,
+                title: input.slice(0, 50) + '...',
+                user_id: user.id
+              }])
+              .select()
+              .single();
+              
+            if (newChat) setCurrentChatId(newChat.id);
+          }
+          
+          loadChatHistory(user.id);
+        }
+        
+        setIsLoading(false);
+        return;
+      }
 
+      // Handle non-Finacco queries with AI
       if (useGemini) {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
           method: 'POST',
@@ -285,13 +449,16 @@ const TaxAssistant: React.FC = () => {
 
         const text = formatResponse(data.candidates[0].content.parts[0].text);
 
-        assistantResponse = {
+        const assistantResponse: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           content: text,
           timestamp: new Date().toISOString(),
           name: 'Finacco Solutions'
         };
+
+        const updatedMessages = [...messages, newMessage, assistantResponse];
+        setMessages(updatedMessages);
       } else {
         const systemPrompt = `You are a knowledgeable tax assistant specializing in Indian GST and Income Tax. 
         Format your responses with:
@@ -320,47 +487,44 @@ const TaxAssistant: React.FC = () => {
 
         const text = formatResponse(completion.choices[0].message.content);
 
-        assistantResponse = {
+        const assistantResponse: Message = {
           id: (Date.now() + 1).toString(),
           role: 'assistant',
           content: text,
           timestamp: new Date().toISOString(),
           name: 'Finacco Solutions'
         };
+
+        const updatedMessages = [...messages, newMessage, assistantResponse];
+        setMessages(updatedMessages);
       }
 
-      const updatedMessages = [...messages, newMessage, assistantResponse];
-      setMessages(updatedMessages);
-      
+      // Save to chat history
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         if (currentChatId) {
-          const { error: updateError } = await supabase
+          await supabase
             .from('chat_histories')
             .update({
-              messages: updatedMessages,
+              messages: messages,
             })
             .eq('id', currentChatId);
-            
-          if (updateError) throw updateError;
         } else {
-          const { data: newChat, error: insertError } = await supabase
+          const { data: newChat } = await supabase
             .from('chat_histories')
             .insert([{
-              messages: updatedMessages,
+              messages: messages,
               title: input.slice(0, 50) + '...',
               user_id: user.id
             }])
             .select()
             .single();
             
-          if (insertError) throw insertError;
           if (newChat) setCurrentChatId(newChat.id);
         }
         
         loadChatHistory(user.id);
       }
-        
     } catch (error) {
       console.error('Error:', error);
       let errorMessage = 'An unexpected error occurred. Please try again later.';
@@ -475,6 +639,35 @@ const TaxAssistant: React.FC = () => {
 
   return (
     <div className="h-screen flex bg-gray-50">
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowHistory(true)}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+            >
+              <Menu size={24} />
+            </button>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+                <Brain className="text-white" size={20} />
+              </div>
+              <span className="font-semibold text-gray-800">Tax Assistant</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <Link
+              to="/"
+              className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-lg transition-colors"
+            >
+              <Home size={18} />
+              <span className="text-sm">Home</span>
+            </Link>
+          </div>
+        </div>
+      </div>
+
       {/* Sidebar */}
       <div 
         className={`w-full md:w-72 lg:w-80 bg-white border-r border-gray-200 flex-shrink-0 
@@ -544,9 +737,9 @@ const TaxAssistant: React.FC = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-screen w-full md:ml-0">
-        {/* Header */}
-        <div className="bg-white border-b border-gray-200 p-4 sticky top-0 z-30">
+      <div className="flex-1 flex flex-col h-screen w-full md:ml-0 pt-16 md:pt-0">
+        {/* Desktop Header */}
+        <div className="hidden md:block bg-white border-b border-gray-200 p-4 sticky top-0 z-30">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <button
