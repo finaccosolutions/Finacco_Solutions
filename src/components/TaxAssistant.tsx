@@ -115,29 +115,31 @@ const TaxAssistant: React.FC = () => {
     return true;
   };
 
-  const formatResponse = (text: string) => {
-    // Add section headers with custom styling
-    text = text.replace(
-      /^(Overview|Summary|Details|Important Points|Note|References):/gm,
-      '### $1\n'
-    );
-    
-    // Convert bullet points to proper markdown with custom styling
-    text = text.replace(/^[•●○]/gm, '- ');
-    
-    // Add table formatting if there's tabular data
-    if (text.includes('|')) {
-      const lines = text.split('\n');
-      const tableStart = lines.findIndex(line => line.includes('|'));
-      if (tableStart !== -1) {
-        // Add table header styling
-        lines.splice(tableStart + 1, 0, lines[tableStart].replace(/[^|]/g, '-'));
-        text = lines.join('\n');
-      }
-    }
-    
-    return text;
-  };
+        const formatResponse = (text: string) => {
+        // Format headers
+        text = text.replace(
+          /^(Overview|Summary|Details|Important Points|Key Points|Note|References|Examples):/gm,
+          '\n### $1\n'
+        );
+      
+        // Bullet points
+        text = text.replace(/^[•●○]/gm, '- ');
+      
+        // Bold highlights like percentages or sections
+        text = text.replace(/(\b\d{1,3}%|\bSection\s\d+[A-Z]?)\b/g, '**$1**');
+      
+        // Table fix: insert separator after header if not present
+        const lines = text.split('\n');
+        for (let i = 0; i < lines.length; i++) {
+          if (lines[i].includes('|') && !lines[i + 1]?.match(/^-+\|/)) {
+            const pipeCount = lines[i].split('|').length - 1;
+            const separator = Array(pipeCount + 1).fill('---').join('|');
+            lines.splice(i + 1, 0, separator);
+          }
+        }
+        return lines.join('\n').trim();
+      };
+
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -164,22 +166,39 @@ const TaxAssistant: React.FC = () => {
     try {
       let assistantResponse: Message;
 
-      if (useGemini) {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            contents: [{
-              parts: [{
-                text: `You are a knowledgeable tax assistant specializing in Indian GST and Income Tax. 
-                Format your response with clear sections, bullet points, and tables where appropriate.
-                Please provide accurate, fact-based responses about the following query: ${input}`
-              }]
-            }]
-          })
-        });
+        if (useGemini) {
+          const GEMINI_MODEL = "gemini-pro"; // use a valid model listed from the API
+        
+          const promptText = `
+        You are a highly knowledgeable assistant on Indian GST and Income Tax.
+        
+        Respond to the user query in a well-structured format with:
+        - **Brief summary**
+        - **Section headers**: Overview, Details, Examples, Key Points
+        - **Bullet points** for key takeaways
+        - **Tables** if comparisons are needed
+        - **Real examples** where possible
+        - **Clear formatting** using Markdown
+        Focus only on fact-based, useful info. Avoid filler. Don’t repeat.
+        Query: ${input}
+        `;
+        
+          const response = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent?key=${GEMINI_API_KEY}`,
+            {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                contents: [{
+                  role: "user",
+                  parts: [{ text: promptText }]
+                }]
+              })
+            }
+          );
+
 
         if (!response.ok) {
           if (response.status === 404) {
@@ -202,14 +221,25 @@ const TaxAssistant: React.FC = () => {
           timestamp: new Date().toISOString(),
         };
       } else {
-        const systemPrompt = `You are a knowledgeable tax assistant specializing in Indian GST and Income Tax. 
-        Format your responses with:
-        - Clear section headers (Overview, Details, Important Points)
-        - Bullet points for key information
-        - Tables for comparative data
-        - Examples where appropriate
-        Always cite relevant sections of tax laws.
-        If you're not completely sure about something, say so and recommend consulting a tax professional.`;
+        const systemPrompt = `
+                            You are a highly knowledgeable assistant on Indian GST and Income Tax.
+                            
+                            Respond to user queries in a structured and **visually easy-to-read** format with the following rules:
+                            
+                            1. Start with a **brief summary** of the topic (2–3 sentences).
+                            2. Use **clear headers**: Overview, Details, Examples, Key Points, Tables, etc.
+                            3. Use **bullet points** for lists and steps.
+                            4. If useful, display **comparative tables** with headers and proper alignment.
+                            5. Avoid generic filler; always **prioritize concise, factual, and actionable content.**
+                            6. Highlight key legal sections, due dates, or percentages in **bold**.
+                            7. Provide examples (with numbers) where possible.
+                            8. Close with a quick **summary or recommendation** if needed.
+                            9. Never repeat or restate; write in an easy-to-scan way.
+                            10. Don't use overly technical language—write for small business owners or self-employed users.
+                            
+                            If visuals (charts/graphs) would help, describe them using Markdown so they can be rendered later.
+                            `;
+
 
         const completion = await openai.chat.completions.create({
           model: "gpt-3.5-turbo",
