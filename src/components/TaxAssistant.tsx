@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
 import { Send, Loader2, Brain, Trash2, AlertCircle, LogOut, X, Plus, Home, MessageSquare, PanelLeftClose, PanelLeftOpen } from 'lucide-react';
+import OpenAI from 'openai';
 import Auth from './Auth';
 import { Link } from 'react-router-dom';
 
@@ -710,52 +711,27 @@ const TaxAssistant: React.FC = () => {
 
   return (
     <div className="h-screen flex bg-gray-50">
-      {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white z-50">
-        <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => setShowHistory(!showHistory)}
-              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
-            >
-              {showHistory ? <PanelLeftClose size={24} /> : <PanelLeftOpen size={24} />}
-            </button>
+      {/* History Panel */}
+      <div 
+        className={`fixed md:relative inset-y-0 left-0 transform transition-transform duration-300 ease-in-out z-40 ${
+          showHistory ? 'translate-x-0' : '-translate-x-[280px]'
+        }`}
+      >
+        {/* Main History Panel */}
+        <div className="w-[280px] bg-white border-r border-gray-200 flex flex-col h-full">
+          <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
                 <Brain className="text-white" size={20} />
               </div>
-              <span className="font-semibold">Tax Assistant</span>
+              <h2 className="text-lg font-semibold">Chat History</h2>
             </div>
-          </div>
-          <div className="flex items-center gap-2">
             <button
-              onClick={createNewChat}
-              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
-              title="New Chat"
+              onClick={() => setShowHistory(false)}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors"
             >
-              <Plus size={20} />
+              <PanelLeftClose size={20} />
             </button>
-            <button
-              onClick={handleSignOut}
-              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-all duration-300"
-              title="Sign out"
-            >
-              <LogOut size={20} />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* History Panel */}
-      <div 
-        className={`fixed md:relative inset-y-0 left-0 transform transition-transform duration-300 ease-in-out z-40 flex ${
-          showHistory ? 'translate-x-0' : '-translate-x-[calc(100%-2.5rem)] md:-translate-x-[calc(100%-2.5rem)]'
-        }`}
-      >
-        {/* Main History Panel */}
-        <div className="w-80 bg-white border-r border-gray-200 flex flex-col h-full pt-16 md:pt-4">
-          <div className="flex items-center justify-between px-4 py-2">
-            <h2 className="text-lg font-semibold text-gray-700">Chat History</h2>
           </div>
           
           <div className="flex gap-2 px-4 py-2">
@@ -799,20 +775,26 @@ const TaxAssistant: React.FC = () => {
             ))}
           </div>
         </div>
-
-        {/* Toggle Button */}
-        <button
-          onClick={() => setShowHistory(!showHistory)}
-          className="h-10 w-10 bg-white border border-gray-200 rounded-r-lg shadow-md flex items-center justify-center hover:bg-gray-50 transition-colors mt-20 md:mt-8"
-        >
-          {showHistory ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
-        </button>
       </div>
 
+      {/* Collapsed History Panel */}
+      {!showHistory && (
+        <div className="fixed left-0 top-1/2 -translate-y-1/2 transform z-40">
+          <button
+            onClick={() => setShowHistory(true)}
+            className="bg-white border border-gray-200 rounded-r-lg shadow-md p-2 hover:bg-gray-50 transition-colors"
+          >
+            <PanelLeftOpen size={20} />
+          </button>
+        </div>
+      )}
+
       {/* Main Chat Area */}
-      <div className={`flex-1 flex flex-col h-screen md:h-full pt-16 md:pt-0 ${!showHistory ? 'md:ml-0' : ''}`}>
-        {/* Desktop Header */}
-        <div className="hidden md:block bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 shadow-md">
+      <div className={`flex-1 flex flex-col h-screen transition-all duration-300 ${
+        showHistory ? 'md:ml-[280px]' : 'ml-0'
+      }`}>
+        {/* Header */}
+        <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 shadow-md">
           <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
@@ -829,7 +811,7 @@ const TaxAssistant: React.FC = () => {
                 className="flex items-center gap-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
               >
                 <Home size={20} />
-                <span>Home</span>
+                <span className="hidden sm:inline">Home</span>
               </Link>
               <button
                 onClick={clearChat}
