@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
-import { Send, Loader2, Brain, History, Trash2, AlertCircle, LogOut, X, Plus, Home, MessageSquare } from 'lucide-react';
+import { Send, Loader2, Brain, History, Trash2, AlertCircle, LogOut, X, Plus, Home, MessageSquare, ChevronLeft, ChevronRight } from 'lucide-react';
 import OpenAI from 'openai';
 import Auth from './Auth';
 import { Link } from 'react-router-dom';
@@ -272,13 +272,15 @@ const TaxAssistant: React.FC = () => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
+  const [isHistoryHovered, setIsHistoryHovered] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [useGemini, setUseGemini] = useState(true);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [typingMessage, setTypingMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
+  const historyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
@@ -468,7 +470,7 @@ const TaxAssistant: React.FC = () => {
           body: JSON.stringify({
             contents: [{
               parts: [{
-                text: `You are a helpful and knowledgeable tax assistant. Reply to the following query with clear, concise, and accurate information focused only on the user's question. 
+                text: `You are a helpful and knowledgeable tax assistant in India. Reply to the following query with clear, concise, and accurate information focused only on the user's question. 
                       Avoid introductions or general explanations unless directly related. 
                       Use bullet points, tables, and section headings if helpful for clarity. 
                       Keep the language simple and easy to understand, especially for non-experts.
@@ -675,6 +677,22 @@ const TaxAssistant: React.FC = () => {
     setCurrentChatId(null);
   };
 
+  const handleHistoryMouseEnter = () => {
+    setIsHistoryHovered(true);
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+    }
+  };
+
+  const handleHistoryMouseLeave = () => {
+    if (historyTimeoutRef.current) {
+      clearTimeout(historyTimeoutRef.current);
+    }
+    historyTimeoutRef.current = setTimeout(() => {
+      setIsHistoryHovered(false);
+    }, 300);
+  };
+
   if (!isAuthenticated) {
     return <Auth onAuthSuccess={() => setIsAuthenticated(true)} />;
   }
@@ -682,33 +700,33 @@ const TaxAssistant: React.FC = () => {
   return (
     <div className="h-screen flex bg-gray-50">
       {/* Mobile Header */}
-      <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
+      <div className="md:hidden fixed top-0 left-0 right-0 bg-gradient-to-r from-blue-600 to-indigo-600 text-white z-50">
         <div className="flex items-center justify-between p-4">
           <div className="flex items-center gap-4">
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
             >
               <MessageSquare size={24} />
             </button>
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+              <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
                 <Brain className="text-white" size={20} />
               </div>
-              <span className="font-semibold text-gray-800">Tax Assistant</span>
+              <span className="font-semibold">Tax Assistant</span>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button
               onClick={createNewChat}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
               title="New Chat"
             >
               <Plus size={20} />
             </button>
             <button
               onClick={handleSignOut}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+              className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
               title="Sign out"
             >
               <LogOut size={20} />
@@ -717,100 +735,104 @@ const TaxAssistant: React.FC = () => {
         </div>
       </div>
 
-      {/* Sidebar/History Panel */}
-      <div 
-        className={`fixed md:relative inset-y-0 left-0 w-full md:w-80 bg-white border-r border-gray-200 
-          transform transition-transform duration-300 ease-in-out z-40
-          ${showHistory ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
-      >
-        <div className="flex flex-col h-full pt-16 md:pt-4">
-          <div className="flex items-center justify-between px-4 py-2">
-            <h2 className="text-lg font-semibold text-gray-700">Chat History</h2>
-            <button
-              onClick={() => setShowHistory(false)}
-              className="md:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
-            >
-              <X size={20} />
-            </button>
-          </div>
-          
-          <div className="flex gap-2 px-4 py-2">
-            <button
-              onClick={() => {
-                createNewChat();
-                setShowHistory(false);
-              }}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2"
-            >
-              <Plus size={18} />
-              <span>New Chat</span>
-            </button>
-          </div>
-
-          <div className="flex-1 overflow-y-auto px-4 py-2">
-            {chatHistories.map((chat) => (
-              <div
-                key={chat.id}
-                onClick={() => loadChat(chat)}
-                className={`group relative bg-white hover:bg-gray-50 p-4 rounded-lg cursor-pointer transition-all duration-300 border mb-2 ${
-                  currentChatId === chat.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-blue-100'
-                }`}
+      {/* History Panel */}
+      {showHistory && (
+        <div className="fixed md:relative inset-y-0 left-0 w-80 bg-white border-r border-gray-200 transform transition-transform duration-300 ease-in-out z-40">
+          <div className="flex flex-col h-full pt-16 md:pt-4">
+            <div className="flex items-center justify-between px-4 py-2">
+              <h2 className="text-lg font-semibold text-gray-700">Chat History</h2>
+              <button
+                onClick={() => setShowHistory(false)}
+                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
               >
-                <div className="flex items-start gap-3">
-                  <MessageSquare size={20} className={`${currentChatId === chat.id ? 'text-blue-500' : 'text-gray-400'}`} />
-                  <div className="flex-grow min-w-0 pr-8">
-                    <p className="text-sm font-medium text-gray-700 line-clamp-4">{chat.title}</p>
-                    <p className="text-xs text-gray-500 mt-1">
-                      {new Date(chat.created_at).toLocaleDateString()}
-                    </p>
+                <ChevronLeft size={20} />
+              </button>
+            </div>
+            
+            <div className="flex gap-2 px-4 py-2">
+              <button
+                onClick={() => {
+                  createNewChat();
+                  setShowHistory(false);
+                }}
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <Plus size={18} />
+                <span>New Chat</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-y-auto px-4 py-2">
+              {chatHistories.map((chat) => (
+                <div
+                  key={chat.id}
+                  onClick={() => loadChat(chat)}
+                  className={`group relative bg-white hover:bg-gray-50 p-4 rounded-lg cursor-pointer transition-all duration-300 border mb-2 ${
+                    currentChatId === chat.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-blue-100'
+                  }`}
+                >
+                  <div className="flex items-start gap-3">
+                    <MessageSquare size={20} className={`${currentChatId === chat.id ? 'text-blue-500' : 'text-gray-400'}`} />
+                    <div className="flex-grow min-w-0 pr-8">
+                      <p className="text-sm font-medium text-gray-700 line-clamp-4">{chat.title}</p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        {new Date(chat.created_at).toLocaleDateString()}
+                      </p>
+                    </div>
+                    <button
+                      onClick={(e) => deleteChat(chat.id, e)}
+                      className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
+                    >
+                      <Trash2 size={16} className="text-red-500" />
+                    </button>
                   </div>
-                  <button
-                    onClick={(e) => deleteChat(chat.id, e)}
-                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
-                  >
-                    <Trash2 size={16} className="text-red-500" />
-                  </button>
                 </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Main Chat Area */}
       <div className="flex-1 flex flex-col h-screen md:h-full pt-16 md:pt-0">
         {/* Desktop Header */}
-        <div className="hidden md:block bg-white border-b border-gray-200 p-4">
-          <div className="flex items-center justify-between">
+        <div className="hidden md:block bg-gradient-to-r from-blue-600 to-indigo-600 text-white p-4 shadow-md">
+          <div className="flex items-center justify-between max-w-7xl mx-auto">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg">
+              {!showHistory && (
+                <button
+                  onClick={() => setShowHistory(true)}
+                  className="p-2 text-white/80 hover:text-white hover: bg-white/10 rounded-lg"
+                >
+                  <ChevronRight size={24} />
+                </button>
+              )}
+              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
                 <Brain className="text-white" size={24} />
               </div>
               <div>
-                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                  Tax Assistant AI
-                </h1>
-                <p className="text-sm text-gray-500">{user?.email}</p>
+                <h1 className="text-xl font-bold">Tax Assistant AI</h1>
+                <p className="text-sm text-white/80">{user?.email}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <Link
                 to="/"
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100  rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
               >
                 <Home size={20} />
                 <span>Home</span>
               </Link>
               <button
                 onClick={clearChat}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
                 title="Clear all chats"
               >
                 <Trash2 size={20} />
               </button>
               <button
                 onClick={handleSignOut}
-                className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                className="p-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg"
                 title="Sign out"
               >
                 <LogOut size={20} />
@@ -828,99 +850,92 @@ const TaxAssistant: React.FC = () => {
         )}
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex items-start gap-3 ${
-                message.role === 'user' ? 'justify-end' : 'justify-start'
-              } max-w-4xl mx-auto`}
-            >
-              {message.role === 'assistant' && (
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
-                  <Brain className="text-white" size={18} />
-                </div>
-              )}
+        <div className="flex-1 overflow-y-auto p-4">
+          <div className="max-w-7xl mx-auto space-y-4">
+            {messages.map((message) => (
               <div
-                className={`rounded-lg p-4 ${
-                  message.role === 'user'
-                    ? 'bg-blue-500 text-white ml-auto'
-                    : 'bg-white shadow-sm border border-gray-100 mr-auto'
-                } max-w-[80%]`}
+                key={message.id}
+                className={`flex items-start gap-3 ${
+                  message.role === 'user' ? 'justify-end' : 'justify-start'
+                }`}
               >
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">
-                    {message.name || (message.role === 'user' ? 'You' : 'Assistant')}
-                  </span>
-                  <span className="text-xs opacity-70">
-                    {new Date(message.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
+                {message.role === 'assistant' && (
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+                    <Brain className="text-white" size={18} />
+                  </div>
+                )}
                 <div
-                  className={message.role === 'assistant' ? 'prose max-w-none' : ''}
-                  dangerouslySetInnerHTML={{ __html: message.content }}
-                />
-              </div>
-              {message.role === 'user' && (
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
-                  <span className="text-white font-medium">
-                    {message.name?.[0]?.toUpperCase() || 'U'}
-                  </span>
+                  className={`rounded-lg p-4 ${
+                    message.role === 'user'
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white ml-auto'
+                      : 'bg-white shadow-sm border border-gray-100 mr-auto'
+                  } max-w-[85%]`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-sm">
+                      {message.name || (message.role === 'user' ? 'You' : 'Assistant')}
+                    </span>
+                    <span className="text-xs opacity-70">
+                      {new Date(message.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <div
+                    className={message.role === 'assistant' ? 'prose max-w-none' : ''}
+                    dangerouslySetInnerHTML={{ __html: message.content }}
+                  />
                 </div>
-              )}
-            </div>
-          ))}
-          
-          {typingMessage && (
-            <div className="flex items-start gap-3 justify-start max-w-4xl mx-auto">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
-                <Brain className="text-white" size={18} />
-              </div>
-              <div className="rounded-lg p-4 bg-white shadow-sm border border-gray-100 mr-auto max-w-[80%]">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="font-medium text-sm">{typingMessage.name}</span>
-                  <span className="text-xs opacity-70">
-                    {new Date(typingMessage.timestamp).toLocaleTimeString()}
-                  </span>
-                </div>
-                <div
-                  className="prose max-w-none"
-                  dangerouslySetInnerHTML={{ __html: typingMessage.content }}
-                />
-                {typingMessage.isTyping && (
-                  <div className="flex gap-1 mt-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
-                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                {message.role === 'user' && (
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center">
+                    <span className="text-white font-medium">
+                      {message.name?.[0]?.toUpperCase() || 'U'}
+                    </span>
                   </div>
                 )}
               </div>
-            </div>
-          )}
-          
-          <div ref={messagesEndRef} />
+            ))}
+            
+            {typingMessage && (
+              <div className="flex items-start gap-3 justify-start">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+                  <Brain className="text-white" size={18} />
+                </div>
+                <div className="rounded-lg p-4 bg-white shadow-sm border border-gray-100 mr-auto max-w-[85%]">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="font-medium text-sm">{typingMessage.name}</span>
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                      <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            <div ref={messagesEndRef} />
+          </div>
         </div>
 
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white">
-          <div className="flex items-center gap-4 max-w-4xl mx-auto">
+          <div className="max-w-7xl mx-auto flex items-center gap-4">
             <div className="flex-1 relative">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask me about taxes..."
-                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full px-4 py-3 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 disabled={isLoading}
               />
             </div>
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+              className={`px-6 py-3 rounded-lg flex items-center gap-2 ${
                 isLoading || !input.trim()
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                  : 'bg-blue-500 text-white hover:bg-blue-600'
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700'
               }`}
             >
               {isLoading ? (
