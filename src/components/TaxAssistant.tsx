@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
-import { Send, Loader2, Brain, History, Trash2, AlertCircle, LogOut, X, Plus, Home, MessageSquare, Menu } from 'lucide-react';
+import { Send, Loader2, Brain, History, Trash2, AlertCircle, LogOut, X, Plus, Home, MessageSquare } from 'lucide-react';
 import OpenAI from 'openai';
 import Auth from './Auth';
 import { Link } from 'react-router-dom';
@@ -12,6 +12,7 @@ interface Message {
   content: string;
   timestamp: string;
   name?: string;
+  isTyping?: boolean;
 }
 
 interface ChatHistory {
@@ -228,7 +229,7 @@ For detailed information or support:
   }
 
   // Finacco Advisory services
-  if (lowerQuery.includes('gst') || lowerQuery.includes('income tax') || lowerQuery.includes('advisory') || lowerQuery.includes('financial services')) {
+  if (lowerQuery.includes('advisory') || lowerQuery.includes('financial services')) {
     return `
 **Finacco Advisory Services:**
 
@@ -275,8 +276,10 @@ const TaxAssistant: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [useGemini, setUseGemini] = useState(true);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
+  const [typingMessage, setTypingMessage] = useState<Message | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -338,9 +341,51 @@ const TaxAssistant: React.FC = () => {
   };
 
   const createNewChat = async () => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    setTypingMessage(null);
     setCurrentChatId(null);
     setMessages([]);
     setError(null);
+  };
+
+  const loadChat = (chat: ChatHistory) => {
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    setTypingMessage(null);
+    setMessages(chat.messages);
+    setCurrentChatId(chat.id);
+    setShowHistory(false);
+  };
+
+  const saveToHistory = async (messages: Message[], input: string) => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) {
+      if (currentChatId) {
+        await supabase
+          .from('chat_histories')
+          .update({
+            messages: messages,
+          })
+          .eq('id', currentChatId);
+      } else {
+        const { data: newChat } = await supabase
+          .from('chat_histories')
+          .insert([{
+            messages: messages,
+            title: input.length > 100 ? input.slice(0, 100) + '...' : input,
+            user_id: user.id
+          }])
+          .select()
+          .single();
+          
+        if (newChat) setCurrentChatId(newChat.id);
+      }
+      
+      loadChatHistory(user.id);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -367,54 +412,53 @@ const TaxAssistant: React.FC = () => {
     setInput('');
     setIsLoading(true);
 
+    // Create typing indicator message
+    const typingIndicator: Message = {
+      id: (Date.now() + 1).toString(),
+      role: 'assistant',
+      content: '',
+      timestamp: new Date().toISOString(),
+      name: 'Finacco Solutions',
+      isTyping: true
+    };
+    setTypingMessage(typingIndicator);
+
     try {
       // Check for Finacco-related queries first
       const finaccoResponse = getFinaccoResponse(input);
       
       if (finaccoResponse) {
+        // Simulate typing effect for Finacco responses
+        let displayedContent = '';
+        const words = finaccoResponse.split(' ');
+        
+        for (let i = 0; i < words.length; i++) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+          displayedContent += words[i] + ' ';
+          setTypingMessage(prev => ({
+            ...prev!,
+            content: formatResponse(displayedContent)
+          }));
+        }
+
         const assistantResponse: Message = {
-          id: (Date.now() + 1).toString(),
+          id: typingIndicator.id,
           role: 'assistant',
           content: formatResponse(finaccoResponse),
           timestamp: new Date().toISOString(),
           name: 'Finacco Solutions'
         };
         
+        setTypingMessage(null);
         const updatedMessages = [...messages, newMessage, assistantResponse];
         setMessages(updatedMessages);
         
         // Save to chat history
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          if (currentChatId) {
-            await supabase
-              .from('chat_histories')
-              .update({
-                messages: updatedMessages,
-              })
-              .eq('id', currentChatId);
-          } else {
-            const { data: newChat } = await supabase
-              .from('chat_histories')
-              .insert([{
-                messages: updatedMessages,
-                title: input.slice(0, 50) + '...',
-                user_id: user.id
-              }])
-              .select()
-              .single();
-              
-            if (newChat) setCurrentChatId(newChat.id);
-          }
-          
-          loadChatHistory(user.id);
-        }
-        
-        setIsLoading(false);
+        await saveToHistory(updatedMessages, input);
         return;
       }
 
-      // Handle non-Finacco queries with AI
+      // Handle AI responses
       if (useGemini) {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
           method: 'POST',
@@ -447,18 +491,33 @@ const TaxAssistant: React.FC = () => {
           throw new Error('Invalid response format from Gemini API');
         }
 
-        const text = formatResponse(data.candidates[0].content.parts[0].text);
+        // Add typing effect for Gemini response
+        let displayedContent = '';
+        const words = data.candidates[0].content.parts[0].text.split(' ');
+        
+        for (let i = 0; i < words.length; i++) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+          displayedContent += words[i] + ' ';
+          setTypingMessage(prev => ({
+            ...prev!,
+            content: formatResponse(displayedContent)
+          }));
+        }
 
+        const text = formatResponse(data.candidates[0].content.parts[0].text);
+        
         const assistantResponse: Message = {
-          id: (Date.now() + 1).toString(),
+          id: typingIndicator.id,
           role: 'assistant',
           content: text,
           timestamp: new Date().toISOString(),
           name: 'Finacco Solutions'
         };
 
+        setTypingMessage(null);
         const updatedMessages = [...messages, newMessage, assistantResponse];
         setMessages(updatedMessages);
+        await saveToHistory(updatedMessages, input);
       } else {
         const systemPrompt = `You are a knowledgeable tax assistant specializing in Indian GST and Income Tax. 
         Format your responses with:
@@ -485,48 +544,37 @@ const TaxAssistant: React.FC = () => {
           throw new Error('No response received from OpenAI');
         }
 
-        const text = formatResponse(completion.choices[0].message.content);
+        // Add typing effect for OpenAI response
+        let displayedContent = '';
+        const words = completion.choices[0].message.content.split(' ');
+        
+        for (let i = 0; i < words.length; i++) {
+          await new Promise(resolve => setTimeout(resolve, 50));
+          displayedContent += words[i] + ' ';
+          setTypingMessage(prev => ({
+            ...prev!,
+            content: formatResponse(displayedContent)
+          }));
+        }
 
+        const text = formatResponse(completion.choices[0].message.content);
+        
         const assistantResponse: Message = {
-          id: (Date.now() + 1).toString(),
+          id: typingIndicator.id,
           role: 'assistant',
           content: text,
           timestamp: new Date().toISOString(),
           name: 'Finacco Solutions'
         };
 
+        setTypingMessage(null);
         const updatedMessages = [...messages, newMessage, assistantResponse];
         setMessages(updatedMessages);
-      }
-
-      // Save to chat history
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        if (currentChatId) {
-          await supabase
-            .from('chat_histories')
-            .update({
-              messages: messages,
-            })
-            .eq('id', currentChatId);
-        } else {
-          const { data: newChat } = await supabase
-            .from('chat_histories')
-            .insert([{
-              messages: messages,
-              title: input.slice(0, 50) + '...',
-              user_id: user.id
-            }])
-            .select()
-            .single();
-            
-          if (newChat) setCurrentChatId(newChat.id);
-        }
-        
-        loadChatHistory(user.id);
+        await saveToHistory(updatedMessages, input);
       }
     } catch (error) {
       console.error('Error:', error);
+      setTypingMessage(null);
       let errorMessage = 'An unexpected error occurred. Please try again later.';
       
       if (error instanceof Error) {
@@ -570,12 +618,6 @@ const TaxAssistant: React.FC = () => {
       console.error('Error loading chat history:', error);
       setError('Failed to load chat history. Please try again later.');
     }
-  };
-
-  const loadChat = (chat: ChatHistory) => {
-    setMessages(chat.messages);
-    setCurrentChatId(chat.id);
-    setShowHistory(false);
   };
 
   const deleteChat = async (chatId: string, e: React.MouseEvent) => {
@@ -647,7 +689,7 @@ const TaxAssistant: React.FC = () => {
               onClick={() => setShowHistory(!showHistory)}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
             >
-              <Menu size={24} />
+              <MessageSquare size={24} />
             </button>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
@@ -665,13 +707,6 @@ const TaxAssistant: React.FC = () => {
               <Plus size={20} />
             </button>
             <button
-              onClick={clearChat}
-              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
-              title="Clear all chats"
-            >
-              <Trash2 size={20} />
-            </button>
-            <button
               onClick={handleSignOut}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
               title="Sign out"
@@ -684,10 +719,9 @@ const TaxAssistant: React.FC = () => {
 
       {/* Sidebar/History Panel */}
       <div 
-        className={`fixed inset-y-0 left-0 w-full md:w-72 lg:w-80 bg-white border-r border-gray-200 
+        className={`fixed md:relative inset-y-0 left-0 w-full md:w-80 bg-white border-r border-gray-200 
           transform transition-transform duration-300 ease-in-out z-40
-          ${showHistory ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
-          ${showHistory ? 'md:relative' : ''}`}
+          ${showHistory ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
         <div className="flex flex-col h-full pt-16 md:pt-4">
           <div className="flex items-center justify-between px-4 py-2">
@@ -701,23 +735,15 @@ const TaxAssistant: React.FC = () => {
           </div>
           
           <div className="flex gap-2 px-4 py-2">
-            <Link
-              to="/"
-              className="flex-1 bg-gradient-to-r from-gray-600 to-gray-700 text-white py-2 px-4 rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-300 flex items-center justify-center gap-2"
-              onClick={() => setShowHistory(false)}
-            >
-              <Home size={18} />
-              <span>Home</span>
-            </Link>
             <button
               onClick={() => {
                 createNewChat();
                 setShowHistory(false);
               }}
-              className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2"
+              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Plus size={18} />
-              <span>New</span>
+              <span>New Chat</span>
             </button>
           </div>
 
@@ -725,18 +751,15 @@ const TaxAssistant: React.FC = () => {
             {chatHistories.map((chat) => (
               <div
                 key={chat.id}
-                onClick={() => {
-                  loadChat(chat);
-                  setShowHistory(false);
-                }}
+                onClick={() => loadChat(chat)}
                 className={`group relative bg-white hover:bg-gray-50 p-4 rounded-lg cursor-pointer transition-all duration-300 border mb-2 ${
                   currentChatId === chat.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-blue-100'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <MessageSquare size={20} className={`${currentChatId === chat.id ? 'text-blue-500' : 'text-gray-400'}`} />
-                  <div className="flex-grow min-w-0">
-                    <p className="text-sm font-medium text-gray-700 line-clamp-2">{chat.title}</p>
+                  <div className="flex-grow min-w-0 pr-8">
+                    <p className="text-sm font-medium text-gray-700 line-clamp-4">{chat.title}</p>
                     <p className="text-xs text-gray-500 mt-1">
                       {new Date(chat.created_at).toLocaleDateString()}
                     </p>
@@ -755,7 +778,7 @@ const TaxAssistant: React.FC = () => {
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-screen pt-16 md:pt-0">
+      <div className="flex-1 flex flex-col h-screen md:h-full pt-16 md:pt-0">
         {/* Desktop Header */}
         <div className="hidden md:block bg-white border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
@@ -773,7 +796,7 @@ const TaxAssistant: React.FC = () => {
             <div className="flex items-center gap-2">
               <Link
                 to="/"
-                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100  rounded-lg transition-colors"
               >
                 <Home size={20} />
                 <span>Home</span>
@@ -810,8 +833,8 @@ const TaxAssistant: React.FC = () => {
             <div
               key={message.id}
               className={`flex items-start gap-3 ${
-                message.role === 'user' ? 'justify-end' : ''
-              }`}
+                message.role === 'user' ? 'justify-end' : 'justify-start'
+              } max-w-4xl mx-auto`}
             >
               {message.role === 'assistant' && (
                 <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
@@ -819,11 +842,11 @@ const TaxAssistant: React.FC = () => {
                 </div>
               )}
               <div
-                className={`max-w-3xl rounded-lg p-4 ${
+                className={`rounded-lg p-4 ${
                   message.role === 'user'
-                    ? 'bg-blue-500 text-white'
-                    : 'bg-white shadow-sm border border-gray-100'
-                }`}
+                    ? 'bg-blue-500 text-white ml-auto'
+                    : 'bg-white shadow-sm border border-gray-100 mr-auto'
+                } max-w-[80%]`}
               >
                 <div className="flex items-center gap-2 mb-1">
                   <span className="font-medium text-sm">
@@ -847,12 +870,40 @@ const TaxAssistant: React.FC = () => {
               )}
             </div>
           ))}
+          
+          {typingMessage && (
+            <div className="flex items-start gap-3 justify-start max-w-4xl mx-auto">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+                <Brain className="text-white" size={18} />
+              </div>
+              <div className="rounded-lg p-4 bg-white shadow-sm border border-gray-100 mr-auto max-w-[80%]">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-sm">{typingMessage.name}</span>
+                  <span className="text-xs opacity-70">
+                    {new Date(typingMessage.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+                <div
+                  className="prose max-w-none"
+                  dangerouslySetInnerHTML={{ __html: typingMessage.content }}
+                />
+                {typingMessage.isTyping && (
+                  <div className="flex gap-1 mt-2">
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '0ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '150ms' }}></div>
+                    <div className="w-2 h-2 bg-blue-500 rounded-full animate-bounce" style={{ animationDelay: '300ms' }}></div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          
           <div ref={messagesEndRef} />
         </div>
 
         {/* Input Form */}
         <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 max-w-4xl mx-auto">
             <div className="flex-1 relative">
               <input
                 type="text"
