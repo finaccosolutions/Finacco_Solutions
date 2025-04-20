@@ -21,7 +21,7 @@ interface ChatHistory {
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 const OPENAI_API_KEY = import.meta.env.VITE_OPENAI_API_KEY;
-const GEMINI_API_KEY = 'AIzaSyAciVmjDXQP0wwtGQ4tm9DfdxebFXm5fbw';
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
 
 let supabase = null;
 try {
@@ -50,7 +50,7 @@ const TaxAssistant: React.FC = () => {
   const [chatHistories, setChatHistories] = useState<ChatHistory[]>([]);
   const [showHistory, setShowHistory] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [useGemini, setUseGemini] = useState(false); // Default to OpenAI due to potential Gemini API issues
+  const [useGemini, setUseGemini] = useState(true); // Default to Gemini since both APIs are available
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const requestTimestamps = useRef<number[]>([]);
 
@@ -118,11 +118,10 @@ const TaxAssistant: React.FC = () => {
       let assistantResponse: Message;
 
       if (useGemini) {
-        const response = await fetch('https://generativelanguage.googleapis.com/v1/models/gemini-pro:generateContent', {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${GEMINI_API_KEY}`
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
             contents: [{

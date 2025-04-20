@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Brain } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import Logo from './Logo';
 
 const Navbar: React.FC = () => {
@@ -66,6 +67,14 @@ const Navbar: React.FC = () => {
                 <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-white transform -translate-x-1/2 group-hover:w-full transition-all duration-300"></span>
               </button>
             ))}
+            <Link 
+              to="/tax-assistant"
+              className="flex items-center space-x-2 text-gray-100 hover:text-white font-medium transition-all duration-300 relative group px-4 py-2 rounded-lg hover:bg-white/10"
+            >
+              <Brain size={20} />
+              <span>Tax AI Assistant</span>
+              <span className="absolute bottom-0 left-1/2 w-0 h-0.5 bg-white transform -translate-x-1/2 group-hover:w-full transition-all duration-300"></span>
+            </Link>
           </nav>
           
           <button
@@ -103,6 +112,14 @@ const Navbar: React.FC = () => {
               {item.charAt(0).toUpperCase() + item.slice(1)}
             </button>
           ))}
+          <Link 
+            to="/tax-assistant"
+            className="flex items-center space-x-2 text-xl text-gray-100 hover:text-white font-medium transition-all duration-300 transform hover:translate-x-2 hover:bg-white/10 px-4 py-2 rounded-lg"
+            onClick={() => setIsOpen(false)}
+          >
+            <Brain size={24} />
+            <span>Tax AI Assistant</span>
+          </Link>
         </nav>
       </div>
 
