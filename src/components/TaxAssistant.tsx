@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import ReactMarkdown from 'react-markdown';
-import { Send, Loader2, Brain, History, Trash2, AlertCircle, LogOut } from 'lucide-react';
+import { Send, Loader2, Brain, History, Trash2, AlertCircle, LogOut, X } from 'lucide-react';
 import OpenAI from 'openai';
 import Auth from './Auth';
 
@@ -304,6 +304,25 @@ const TaxAssistant: React.FC = () => {
     setShowHistory(false);
   };
 
+  const deleteChat = async (chatId: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!supabase) return;
+    
+    try {
+      const { error } = await supabase
+        .from('chat_histories')
+        .delete()
+        .eq('id', chatId);
+        
+      if (error) throw error;
+      
+      setChatHistories(prev => prev.filter(chat => chat.id !== chatId));
+    } catch (error) {
+      console.error('Error deleting chat:', error);
+      setError('Failed to delete chat. Please try again later.');
+    }
+  };
+
   const clearChat = async () => {
     if (!supabase) return;
     
@@ -339,8 +358,8 @@ const TaxAssistant: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white">
-      <div className="container mx-auto px-4 py-4">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white pt-16">
+      <div className="container mx-auto px-4">
         <div className="max-w-7xl mx-auto">
           {error && (
             <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
@@ -349,30 +368,40 @@ const TaxAssistant: React.FC = () => {
             </div>
           )}
           <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-            <div className="flex h-[calc(100vh-2rem)]">
+            <div className="flex h-[calc(100vh-5rem)]">
               {/* Sidebar */}
-              <div className={`w-80 bg-gray-50 border-r border-gray-200 flex-shrink-0 ${showHistory ? '' : 'hidden'} md:block`}>
-                <div className="p-4">
+              <div className={`w-80 bg-gray-50 border-r border-gray-200 flex-shrink-0 transform transition-transform duration-300 ${
+                showHistory ? 'translate-x-0' : '-translate-x-full'
+              } md:translate-x-0 absolute md:relative z-30 h-full`}>
+                <div className="p-4 h-full flex flex-col">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold text-gray-700">Chat History</h2>
                     <button
                       onClick={() => setShowHistory(false)}
                       className="md:hidden text-gray-500 hover:text-gray-700"
                     >
-                      ×
+                      <X size={20} />
                     </button>
                   </div>
-                  <div className="space-y-2">
-                    {chatHistories.map((chat) => (
-                      <button
-                        key={chat.id}
-                        onClick={() => loadChat(chat)}
-                        className="w-full text-left p-3 rounded-lg hover:bg-gray-100 transition-colors"
-                      >
-                        <p className="text-sm font-medium text-gray-700 truncate">{chat.title}</p>
-                        <p className="text-xs text-gray-500">{new Date(chat.created_at).toLocaleDateString()}</p>
-                      </button>
-                    ))}
+                  <div className="flex-grow overflow-y-auto">
+                    <div className="space-y-2">
+                      {chatHistories.map((chat) => (
+                        <div
+                          key={chat.id}
+                          onClick={() => loadChat(chat)}
+                          className="group relative bg-white hover:bg-gray-50 p-3 rounded-lg cursor-pointer transition-colors"
+                        >
+                          <p className="text-sm font-medium text-gray-700 pr-8 truncate">{chat.title}</p>
+                          <p className="text-xs text-gray-500">{new Date(chat.created_at).toLocaleDateString()}</p>
+                          <button
+                            onClick={(e) => deleteChat(chat.id, e)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 rounded-full"
+                          >
+                            <Trash2 size={16} className="text-red-500" />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -401,7 +430,7 @@ const TaxAssistant: React.FC = () => {
                       <button
                         onClick={clearChat}
                         className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                        title="Clear chat"
+                        title="Clear all chats"
                       >
                         <Trash2 size={20} />
                       </button>
@@ -424,7 +453,7 @@ const TaxAssistant: React.FC = () => {
                       className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
                     >
                       <div
-                        className={`max-w-3xl rounded-lg p-6 ${
+                        className={`max-w-4xl rounded-lg p-6 ${
                           message.role === 'user'
                             ? 'bg-blue-600 text-white'
                             : 'bg-gray-100 text-gray-800'
