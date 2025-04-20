@@ -710,97 +710,164 @@ const TaxAssistant: React.FC = () => {
   }
 
   return (
-    <div className="h-screen flex bg-gray-50">
-      {/* History Panel */}
+    <div className="h-screen flex bg-gray-50 overflow-x-hidden">
+      {/* History Panel - Hidden on mobile, collapsible on desktop */}
       <div 
-        className={`fixed md:relative inset-y-0 left-0 transform ${
-          showHistory ? 'translate-x-0' : '-translate-x-[280px]'
-        } transition-transform duration-300 ease-in-out z-40 w-[280px] bg-white border-r border-gray-200 flex flex-col h-full shadow-lg md:shadow-none`}
+        className={`hidden md:flex fixed md:relative inset-y-0 left-0 transform ${
+          showHistory ? 'w-[280px]' : 'w-[50px]'
+        } transition-all duration-300 ease-in-out z-40 bg-gradient-to-br from-gray-800 to-gray-900 h-full flex-col`}
+        onMouseEnter={handleHistoryMouseEnter}
+        onMouseLeave={handleHistoryMouseLeave}
       >
-        <div className="flex items-center justify-between p-4 bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-white/10 backdrop-blur-sm flex items-center justify-center">
-              <Brain className="text-white" size={20} />
-            </div>
-            <h2 className="text-lg font-semibold">Chat History</h2>
-          </div>
-          <button
-            onClick={() => setShowHistory(false)}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors"
-          >
-            <Menu size={20} className="transform rotate-90" />
-          </button>
-        </div>
-        
-        <div className="flex gap-2 px-4 py-2">
-          <button
-            onClick={() => {
-              createNewChat();
-              setShowHistory(false);
-            }}
-            className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2 hover:scale-105"
-          >
-            <Plus size={18} />
-            <span>New Chat</span>
-          </button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-4 py-2">
-          {chatHistories.map((chat) => (
-            <div
-              key={chat.id}
-              onClick={() => loadChat(chat)}
-              className={`group relative bg-white hover:bg-gray-50 p-4 rounded-lg cursor-pointer transition-all duration-300 border mb-2 hover:shadow-md ${
-                currentChatId === chat.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-blue-100'
-              }`}
+        <div className="flex-1 overflow-hidden">
+          <div className={`flex items-center justify-end p-4 ${showHistory ? 'justify-between' : 'justify-center'}`}>
+            {showHistory && (
+              <div className="flex items-center gap-2 text-white">
+                <Brain size={20} />
+                <h2 className="text-lg font-semibold">Chat History</h2>
+              </div>
+            )}
+            <button
+              onClick={() => setShowHistory(!showHistory)}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white"
             >
-              <div className="flex items-start gap-3">
-                <MessageSquare size={20} className={`${currentChatId === chat.id ? 'text-blue-500' : 'text-gray-400'} group-hover:scale-110 transition-transform`} />
-                <div className="flex-grow min-w-0 pr-8">
-                  <p className="text-sm font-medium text-gray-700 line-clamp-4 group-hover:text-blue-600 transition-colors">{chat.title}</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {new Date(chat.created_at).toLocaleDateString()}
-                  </p>
-                </div>
+              <Menu size={20} />
+            </button>
+          </div>
+
+          {showHistory && (
+            <>
+              <div className="flex gap-2 px-4 py-2">
                 <button
-                  onClick={(e) => deleteChat(chat.id, e)}
-                  className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
+                  onClick={() => {
+                    createNewChat();
+                    setShowHistory(false);
+                  }}
+                  className="w-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white py-2 px-4 rounded-lg hover:from-blue-500/30 hover:to-purple-500/30 transition-all duration-300 flex items-center justify-center gap-2"
                 >
-                  <Trash2 size={16} className="text-red-500" />
+                  <Plus size={18} />
+                  <span>New Chat</span>
                 </button>
               </div>
-            </div>
-          ))}
+
+              <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar">
+                {chatHistories.map((chat) => (
+                  <div
+                    key={chat.id}
+                    onClick={() => loadChat(chat)}
+                    className={`group relative hover:bg-white/5 p-4 rounded-lg cursor-pointer transition-all duration-300 mb-2 ${
+                      currentChatId === chat.id ? 'bg-white/10' : ''
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <MessageSquare size={20} className="text-white/70" />
+                      <div className="flex-grow min-w-0 pr-8">
+                        <p className="text-sm font-medium text-white line-clamp-4">{chat.title}</p>
+                        <p className="text-xs text-white/70 mt-1">
+                          {new Date(chat.created_at).toLocaleDateString()}
+                        </p>
+                      </div>
+                      <button
+                        onClick={(e) => deleteChat(chat.id, e)}
+                        className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-white/10 rounded-full"
+                      >
+                        <Trash2 size={16} className="text-white/70" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
         </div>
       </div>
 
+      {/* Mobile History Panel - Full screen overlay */}
+      {showHistory && (
+        <div className="md:hidden fixed inset-0 bg-gradient-to-br from-gray-800 to-gray-900 z-50 flex flex-col">
+          <div className="safe-top flex items-center justify-between p-4 border-b border-white/10">
+            <div className="flex items-center gap-2 text-white">
+              <Brain size={20} />
+              <h2 className="text-lg font-semibold">Chat History</h2>
+            </div>
+            <button
+              onClick={() => setShowHistory(false)}
+              className="p-2 hover:bg-white/10 rounded-lg transition-colors text-white"
+            >
+              <Menu size={20} />
+            </button>
+          </div>
+
+          <div className="flex gap-2 px-4 py-2">
+            <button
+              onClick={() => {
+                createNewChat();
+                setShowHistory(false);
+              }}
+              className="w-full bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white py-2 px-4 rounded-lg hover:from-blue-500/30 hover:to-purple-500/30 transition-all duration-300 flex items-center justify-center gap-2"
+            >
+              <Plus size={18} />
+              <span>New Chat</span>
+            </button>
+          </div>
+
+          <div className="flex-1 overflow-y-auto px-4 py-2 custom-scrollbar">
+            {chatHistories.map((chat) => (
+              <div
+                key={chat.id}
+                onClick={() => {
+                  loadChat(chat);
+                  setShowHistory(false);
+                }}
+                className={`group relative hover:bg-white/5 p-4 rounded-lg cursor-pointer transition-all duration-300 mb-2 ${
+                  currentChatId === chat.id ? 'bg-white/10' : ''
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <MessageSquare size={20} className="text-white/70" />
+                  <div className="flex-grow min-w-0 pr-8">
+                    <p className="text-sm font-medium text-white line-clamp-4">{chat.title}</p>
+                    <p className="text-xs text-white/70 mt-1">
+                      {new Date(chat.created_at).toLocaleDateString()}
+                    </p>
+                  </div>
+                  <button
+                    onClick={(e) => deleteChat(chat.id, e)}
+                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-white/10 rounded-full"
+                  >
+                    <Trash2 size={16} className="text-white/70" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-screen">
+      <div className="flex-1 flex flex-col h-screen max-w-full">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
+          <div className="flex items-center justify-between p-4 max-w-full overflow-x-auto">
+            <div className="flex items-center gap-3 min-w-0">
               <button
-                onClick={() => setShowHistory(!showHistory)}
-                className="p-2 hover:bg-white/10 rounded-lg transition-colors"
+                onClick={() => setShowHistory(true)}
+                className="md:hidden p-2 hover:bg-white/10 rounded-lg transition-colors flex-shrink-0"
               >
                 <Menu size={24} />
               </button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center">
-                  <Brain className="text-white" size={24} />
-                </div>
-                <div>
-                  <h1 className="text-xl font-bold">Tax Assistant AI</h1>
-                  <p className="text-sm text-white/80">{user?.email}</p>
-                </div>
+              <div className="w-10 h-10 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center flex-shrink-0">
+                <Brain className="text-white" size={24} />
               </div>
-            
+              <div className="min-w-0">
+                <h1 className="text-xl font-bold truncate">Tax Assistant AI</h1>
+                <p className="text-sm text-white/80 truncate">{user?.email}</p>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 ml-4">
               <Link
                 to="/"
-                className="flex items-center gap-2 px-4 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2 text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
               >
                 <Home size={20} />
                 <span className="hidden sm:inline">Home</span>
@@ -826,13 +893,13 @@ const TaxAssistant: React.FC = () => {
         {/* Error Message */}
         {error && (
           <div className="p-4 bg-red-50 border-l-4 border-red-500 flex items-center gap-3">
-            <AlertCircle className="text-red-500" size={20} />
-            <p className="text-red-700">{error}</p>
+            <AlertCircle className="text-red-500 flex-shrink-0" size={20} />
+            <p className="text-red-700 text-sm">{error}</p>
           </div>
         )}
 
         {/* Messages Container */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-4 custom-scrollbar">
           <div className="max-w-7xl mx-auto space-y-4">
             {messages.map((message) => (
               <div
@@ -842,7 +909,7 @@ const TaxAssistant: React.FC = () => {
                 }`}
               >
                 {message.role === 'assistant' && (
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
                     <Brain className="text-white" size={18} />
                   </div>
                 )}
@@ -851,10 +918,10 @@ const TaxAssistant: React.FC = () => {
                     message.role === 'user'
                       ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white ml-auto'
                       : 'bg-white shadow-sm border border-gray-100 mr-auto'
-                  } max-w-[85%]`}
+                  } max-w-[85%] break-words`}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="font-medium text-sm">
+                    <span className="font-medium text-sm truncate">
                       {message.name || (message.role === 'user' ? 'You' : 'Assistant')}
                     </span>
                     <span className="text-xs opacity-70">
@@ -867,7 +934,7 @@ const TaxAssistant: React.FC = () => {
                   />
                 </div>
                 {message.role === 'user' && (
-                  <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center">
+                  <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-600 to-indigo-600 flex items-center justify-center flex-shrink-0">
                     <span className="text-white font-medium">
                       {message.name?.[0]?.toUpperCase() || 'U'}
                     </span>
@@ -878,7 +945,7 @@ const TaxAssistant: React.FC = () => {
             
             {typingMessage && (
               <div className="flex items-start gap-3 justify-start">
-                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center flex-shrink-0">
                   <Brain className="text-white" size={18} />
                 </div>
                 <div className="rounded-lg p-4 bg-white shadow-sm border border-gray-100 mr-auto max-w-[85%]">
@@ -905,7 +972,7 @@ const TaxAssistant: React.FC = () => {
         </div>
 
         {/* Input Form */}
-        <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white">
+        <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white safe-bottom">
           <div className="max-w-7xl mx-auto flex items-start gap-4">
             <div className="flex-1 relative">
               <textarea
@@ -932,7 +999,7 @@ const TaxAssistant: React.FC = () => {
             <button
               type="submit"
               disabled={isLoading || !input.trim()}
-              className={`px-6 py-3 rounded-lg flex items-center gap-2 transition-all duration-300 transform hover:scale-105 ${
+              className={`px-4 sm:px-6 py-3 rounded-lg flex items-center gap-2 transition-all duration-300 transform hover:scale-105 flex-shrink-0 ${
                 isLoading || !input.trim()
                   ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
                   : 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white hover:from-blue-700 hover:to-indigo-700 hover:shadow-lg'
