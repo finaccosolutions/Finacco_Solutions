@@ -642,9 +642,9 @@ const TaxAssistant: React.FC = () => {
       {/* Mobile Header */}
       <div className="md:hidden fixed top-0 left-0 right-0 bg-white border-b border-gray-200 z-50">
         <div className="flex items-center justify-between p-4">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-4">
             <button
-              onClick={() => setShowHistory(true)}
+              onClick={() => setShowHistory(!showHistory)}
               className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
             >
               <Menu size={24} />
@@ -657,108 +657,127 @@ const TaxAssistant: React.FC = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <Link
-              to="/"
-              className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2 px-3 rounded-lg transition-colors"
+            <button
+              onClick={createNewChat}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+              title="New Chat"
             >
-              <Home size={18} />
-              <span className="text-sm">Home</span>
-            </Link>
+              <Plus size={20} />
+            </button>
+            <button
+              onClick={clearChat}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+              title="Clear all chats"
+            >
+              <Trash2 size={20} />
+            </button>
+            <button
+              onClick={handleSignOut}
+              className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+              title="Sign out"
+            >
+              <LogOut size={20} />
+            </button>
           </div>
         </div>
       </div>
 
-      {/* Sidebar */}
+      {/* Sidebar/History Panel */}
       <div 
-        className={`w-full md:w-72 lg:w-80 bg-white border-r border-gray-200 flex-shrink-0 
-          fixed md:relative z-40 h-full transition-transform duration-300 transform
-          ${showHistory ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+        className={`fixed inset-y-0 left-0 w-full md:w-72 lg:w-80 bg-white border-r border-gray-200 
+          transform transition-transform duration-300 ease-in-out z-40
+          ${showHistory ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+          ${showHistory ? 'md:relative' : ''}`}
       >
-        <div className="p-4 h-full flex flex-col">
-          <div className="flex items-center justify-between mb-4">
+        <div className="flex flex-col h-full pt-16 md:pt-4">
+          <div className="flex items-center justify-between px-4 py-2">
             <h2 className="text-lg font-semibold text-gray-700">Chat History</h2>
             <button
               onClick={() => setShowHistory(false)}
-              className="md:hidden text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg"
+              className="md:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
             >
               <X size={20} />
             </button>
           </div>
-          <div className="flex gap-2 mb-4">
+          
+          <div className="flex gap-2 px-4 py-2">
             <Link
               to="/"
               className="flex-1 bg-gradient-to-r from-gray-600 to-gray-700 text-white py-2 px-4 rounded-lg hover:from-gray-700 hover:to-gray-800 transition-all duration-300 flex items-center justify-center gap-2"
+              onClick={() => setShowHistory(false)}
             >
-              <Home size={20} />
+              <Home size={18} />
               <span>Home</span>
             </Link>
             <button
-              onClick={createNewChat}
+              onClick={() => {
+                createNewChat();
+                setShowHistory(false);
+              }}
               className="flex-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white py-2 px-4 rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all duration-300 flex items-center justify-center gap-2"
             >
-              <Plus size={20} />
-              <span>New Chat</span>
+              <Plus size={18} />
+              <span>New</span>
             </button>
           </div>
-          <div className="flex-grow overflow-y-auto">
-            <div className="space-y-2">
-              {chatHistories.map((chat) => (
-                <div
-                  key={chat.id}
-                  onClick={() => loadChat(chat)}
-                  className={`group relative bg-white hover:bg-gray-50 p-4 rounded-lg cursor-pointer transition-all duration-300 border ${
-                    currentChatId === chat.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-blue-100'
-                  }`}
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 mt-1">
-                      <MessageSquare size={20} className={`${currentChatId === chat.id ? 'text-blue-500' : 'text-gray-400'}`} />
-                    </div>
-                    <div className="flex-grow min-w-0">
-                      <p className="text-sm font-medium text-gray-700 line-clamp-2 mb-1">
-                        {chat.title}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(chat.created_at).toLocaleDateString()}
-                      </p>
-                    </div>
-                    <button
-                      onClick={(e) => deleteChat(chat.id, e)}
-                      className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
-                    >
-                      <Trash2 size={16} className="text-red-500" />
-                    </button>
+
+          <div className="flex-1 overflow-y-auto px-4 py-2">
+            {chatHistories.map((chat) => (
+              <div
+                key={chat.id}
+                onClick={() => {
+                  loadChat(chat);
+                  setShowHistory(false);
+                }}
+                className={`group relative bg-white hover:bg-gray-50 p-4 rounded-lg cursor-pointer transition-all duration-300 border mb-2 ${
+                  currentChatId === chat.id ? 'border-blue-500 bg-blue-50' : 'border-gray-100 hover:border-blue-100'
+                }`}
+              >
+                <div className="flex items-start gap-3">
+                  <MessageSquare size={20} className={`${currentChatId === chat.id ? 'text-blue-500' : 'text-gray-400'}`} />
+                  <div className="flex-grow min-w-0">
+                    <p className="text-sm font-medium text-gray-700 line-clamp-2">{chat.title}</p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {new Date(chat.created_at).toLocaleDateString()}
+                    </p>
                   </div>
+                  <button
+                    onClick={(e) => deleteChat(chat.id, e)}
+                    className="absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
+                  >
+                    <Trash2 size={16} className="text-red-500" />
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>
 
       {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col h-screen w-full md:ml-0 pt-16 md:pt-0">
+      <div className="flex-1 flex flex-col h-screen pt-16 md:pt-0">
         {/* Desktop Header */}
-        <div className="hidden md:block bg-white border-b border-gray-200 p-4 sticky top-0 z-30">
+        <div className="hidden md:block bg-white border-b border-gray-200 p-4">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <button
-                onClick={() => setShowHistory(true)}
-                className="md:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
-              >
-                <History size={20} />
-              </button>
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg">
-                  <Brain className="text-white" size={24} />
-                </div>
-                <div>
-                  <h1 className="text-lg md:text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Tax Assistant AI</h1>
-                  <p className="text-sm text-gray-500 hidden md:block">{user?.email}</p>
-                </div>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg">
+                <Brain className="text-white" size={24} />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                  Tax Assistant AI
+                </h1>
+                <p className="text-sm text-gray-500">{user?.email}</p>
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Link
+                to="/"
+                className="flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <Home size={20} />
+                <span>Home</span>
+              </Link>
               <button
                 onClick={clearChat}
                 className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
@@ -775,82 +794,93 @@ const TaxAssistant: React.FC = () => {
               </button>
             </div>
           </div>
-          {error && (
-            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
-              <AlertCircle size={20} />
-              <p className="text-sm">{error}</p>
-            </div>
-          )}
         </div>
 
-        {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          <div className="space-y-6">
-            {messages.length === 0 && (
-              <div className="text-center text-gray-500 mt-8">
-                <Brain size={48} className="mx-auto mb-4 text-gray-400" />
-                <p className="text-lg font-medium">Start a new conversation</p>
-                <p className="text-sm">Ask me anything about Indian GST and Income Tax</p>
-              </div>
-            )}
-            {messages.map((message) => (
-              <div
-                key={message.id}
-                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}
-              >
-                <div className={`w-full ${message.role === 'user' ? 'pl-4 md:pl-12' : 'pr-4 md:pr-12'}`}>
-                  <div className={`text-sm mb-1 ${message.role === 'user' ? 'text-right' : 'text-left'} text-gray-500`}>
-                    {message.name}
-                  </div>
-                  <div
-                    className={`rounded-xl p-4 md:p-6 shadow-sm ${
-                      message.role === 'user'
-                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
-                        : 'bg-white border border-gray-100'
-                    }`}
-                  >
-                    <div
-                      className={`prose prose-lg max-w-none ${message.role === 'user' ? 'prose-invert' : ''}`}
-                      dangerouslySetInnerHTML={{ __html: message.content }}
-                    />
-                  </div>
-                  <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-right' : 'text-left'} text-gray-400`}>
-                    {new Date(message.timestamp).toLocaleTimeString()}
-                  </div>
-                </div>
-              </div>
-            ))}
-            {isLoading && (
-              <div className="flex justify-start w-full">
-                <div className="bg-white rounded-xl p-4 border border-gray-100 shadow-sm">
-                  <Loader2 className="animate-spin text-blue-600" size={24} />
-                </div>
-              </div>
-            )}
-            <div ref={messagesEndRef} />
+        {/* Error Message */}
+        {error && (
+          <div className="p-4 bg-red-50 border-l-4 border-red-500 flex items-center gap-3">
+            <AlertCircle className="text-red-500" size={20} />
+            <p className="text-red-700">{error}</p>
           </div>
+        )}
+
+        {/* Messages Container */}
+        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.map((message) => (
+            <div
+              key={message.id}
+              className={`flex items-start gap-3 ${
+                message.role === 'user' ? 'justify-end' : ''
+              }`}
+            >
+              {message.role === 'assistant' && (
+                <div className="w-8 h-8 rounded-lg bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center">
+                  <Brain className="text-white" size={18} />
+                </div>
+              )}
+              <div
+                className={`max-w-3xl rounded-lg p-4 ${
+                  message.role === 'user'
+                    ? 'bg-blue-500 text-white'
+                    : 'bg-white shadow-sm border border-gray-100'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="font-medium text-sm">
+                    {message.name || (message.role === 'user' ? 'You' : 'Assistant')}
+                  </span>
+                  <span className="text-xs opacity-70">
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                  </span>
+                </div>
+                <div
+                  className={message.role === 'assistant' ? 'prose max-w-none' : ''}
+                  dangerouslySetInnerHTML={{ __html: message.content }}
+                />
+              </div>
+              {message.role === 'user' && (
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                  <span className="text-white font-medium">
+                    {message.name?.[0]?.toUpperCase() || 'U'}
+                  </span>
+                </div>
+              )}
+            </div>
+          ))}
+          <div ref={messagesEndRef} />
         </div>
 
-        {/* Input Area */}
-        <div className="border-t border-gray-200 p-4 sticky bottom-0 bg-white">
-          <form onSubmit={handleSubmit} className="flex gap-2">
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about GST, Income Tax, or any related queries..."
-              className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 placeholder-gray-400"
-              disabled={isLoading || !supabase || (!OPENAI_API_KEY && !GEMINI_API_KEY)}
-            />
+        {/* Input Form */}
+        <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200 bg-white">
+          <div className="flex items-center gap-4">
+            <div className="flex-1 relative">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask me about taxes..."
+                className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                disabled={isLoading}
+              />
+            </div>
             <button
               type="submit"
-              disabled={isLoading || !input.trim() || !supabase || (!OPENAI_API_KEY && !GEMINI_API_KEY)}
-              className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg px-6 py-3 hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              disabled={isLoading || !input.trim()}
+              className={`px-4 py-2 rounded-lg flex items-center gap-2 ${
+                isLoading || !input.trim()
+                  ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                  : 'bg-blue-500 text-white hover:bg-blue-600'
+              }`}
             >
-              <Send size={20} />
+              {isLoading ? (
+                <Loader2 className="animate-spin" size={20} />
+              ) : (
+                <Send size={20} />
+              )}
+              <span className="hidden sm:inline">Send</span>
             </button>
-          </form>
-        </div>
+          </div>
+        </form>
       </div>
     </div>
   );
