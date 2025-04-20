@@ -11,6 +11,7 @@ interface Message {
   role: 'user' | 'assistant';
   content: string;
   timestamp: string;
+  name?: string;
 }
 
 interface ChatHistory {
@@ -44,36 +45,104 @@ const openai = new OpenAI({
 const RATE_LIMIT_WINDOW = 60000;
 const MAX_REQUESTS_PER_WINDOW = 3;
 
-const convertToTable = (text: string): string => {
-  const lines = text.trim().split('\n');
-  if (lines.length < 2) return text;
+const formatResponse = (text: string) => {
+  // Convert headings: **Heading** becomes <h3>
+  text = text.replace(/\*\*(.*?)\*\*/g, '<h3 class="text-xl font-bold text-gray-800 mt-4 mb-2">$1</h3>');
 
-  const headers = lines[0].split('|').map(h => h.trim());
-  const rows = lines.slice(2).map(line => line.split('|').map(cell => cell.trim()));
+  // Safe italic formatting: *italic* only when surrounded by space or punctuation
+  text = text.replace(/(^|\s)\*(\S[^*]*\S)\*(?=\s|\.|,|$)/g, '$1<em class="text-gray-600 italic">$2</em>');
 
-  let html = `
-    <div class="overflow-x-auto my-4">
-      <table class="min-w-full divide-y divide-gray-200 rounded-xl shadow overflow-hidden border border-gray-200">
-        <thead class="bg-blue-50">
-          <tr>
-  `;
+  // Highlight Important/Key Notes
+  text = text.replace(
+    /(Important Points|Key Points|Note):/g,
+    '<div class="bg-blue-50 border-l-4 border-blue-500 p-4 my-4 rounded-r-lg"><h4 class="font-bold text-blue-800 mb-2">$1:</h4>'
+  );
 
-  headers.forEach(header => {
-    html += `<th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider">${header}</th>`;
-  });
+  // Section headers like Overview:, Details:, etc.
+  text = text.replace(
+    /^(Overview|Summary|Details|References):/gm,
+    '<h3 class="text-xl font-bold text-gray-800 mt-6 mb-3">$1</h3>'
+  );
 
-  html += `</tr></thead><tbody class="bg-white divide-y divide-gray-100">`;
+  // Bullet list formatting
+  if (text.match(/^[\*\-•●○]\s+/m)) {
+    const lines = text.split('\n');
+    let insideList = false;
+    let formattedText = '';
 
-  rows.forEach((row, index) => {
-    html += `<tr class="hover:bg-gray-100 transition">`;
-    row.forEach(cell => {
-      html += `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${cell}</td>`;
+    for (let line of lines) {
+      if (/^[\*\-•●○]\s+/.test(line)) {
+        if (!insideList) {
+          insideList = true;
+          formattedText += '\n<ul class="list-disc pl-6 my-4 space-y-2 text-gray-700">\n';
+        }
+        formattedText += `<li class="mb-2">${line.replace(/^[\*\-•●○]\s+/, '')}</li>\n`;
+      } else {
+        if (insideList) {
+          insideList = false;
+          formattedText += '</ul>\n';
+        }
+        formattedText += line + '\n';
+      }
+    }
+
+    if (insideList) formattedText += '</ul>\n';
+    text = formattedText;
+  }
+
+  // Table formatting using markdown-style |
+  if (text.includes('|')) {
+    const blocks = text.split('\n\n');
+    const formattedBlocks = blocks.map(block => {
+      if (block.includes('|')) {
+        const lines = block.trim().split('\n');
+        if (lines.length < 2) return block;
+
+        const headers = lines[0].split('|').map(h => h.trim()).filter(Boolean);
+        const rows = lines.slice(2).map(line => line.split('|').map(cell => cell.trim()).filter(Boolean));
+
+        let tableHtml = `
+          <div class="overflow-x-auto my-6">
+            <table class="min-w-full divide-y divide-gray-200 border border-gray-200 rounded-lg shadow-sm">
+              <thead>
+                <tr class="bg-gradient-to-r from-blue-50 to-indigo-50">
+                  ${headers.map(header => `
+                    <th class="px-6 py-3 text-left text-sm font-semibold text-gray-700 uppercase tracking-wider border-b border-gray-200">${header}</th>
+                  `).join('')}
+                </tr>
+              </thead>
+              <tbody class="bg-white divide-y divide-gray-100">
+                ${rows.map((row, i) => `
+                  <tr class="${i % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-blue-50 transition-colors duration-150">
+                    ${row.map(cell => `<td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 border-b border-gray-100">${cell}</td>`).join('')}
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+        return tableHtml;
+      }
+      return block;
     });
-    html += `</tr>`;
-  });
 
-  html += `</tbody></table></div>`;
-  return html;
+    text = formattedBlocks.join('\n\n');
+  }
+
+  // Code block formatting using ```
+  text = text.replace(
+    /```([^`]+)```/g,
+    '<pre class="bg-gray-800 text-gray-100 rounded-lg p-4 my-4 overflow-x-auto"><code>$1</code></pre>'
+  );
+
+  // Paragraph formatting
+  text = text.replace(/\n\n/g, '</div>\n\n<div class="mb-4">');
+  text = '<div class="mb-4">' + text + '</div>';
+
+  // Cleanup: remove stray "*" used incorrectly
+  text = text.replace(/(^|\s)\*(?=\s|$)/g, '');
+
+  return text;
 };
 
 const TaxAssistant: React.FC = () => {
@@ -149,27 +218,6 @@ const TaxAssistant: React.FC = () => {
     return true;
   };
 
-  const formatResponse = (text: string) => {
-    text = text.replace(
-      /^(Overview|Summary|Details|Important Points|Note|References):/gm,
-      '### $1\n'
-    );
-    text = text.replace(/^[•●○]/gm, '- ');
-    
-    if (text.includes('|')) {
-      const blocks = text.split('\n\n');
-      const formattedBlocks = blocks.map(block => {
-        if (block.includes('|')) {
-          return convertToTable(block);
-        }
-        return block;
-      });
-      text = formattedBlocks.join('\n\n');
-    }
-    
-    return text;
-  };
-
   const createNewChat = async () => {
     setCurrentChatId(null);
     setMessages([]);
@@ -187,11 +235,13 @@ const TaxAssistant: React.FC = () => {
     if (!checkRateLimit()) return;
 
     setError(null);
+    const userName = user?.email?.split('@')[0] || 'User';
     const newMessage: Message = {
       id: Date.now().toString(),
       role: 'user',
       content: input,
       timestamp: new Date().toISOString(),
+      name: userName
     };
 
     setMessages(prev => [...prev, newMessage]);
@@ -210,9 +260,12 @@ const TaxAssistant: React.FC = () => {
           body: JSON.stringify({
             contents: [{
               parts: [{
-                text: `You are a knowledgeable tax assistant specializing in Indian GST and Income Tax. 
-                Format your response with clear sections, bullet points, and tables where appropriate.
-                Please provide accurate, fact-based responses about the following query: ${input}`
+                text: `You are a helpful and knowledgeable tax assistant. Reply to the following query with clear, concise, and accurate information focused only on the user's question. 
+                      Avoid introductions or general explanations unless directly related. 
+                      Use bullet points, tables, and section headings if helpful for clarity. 
+                      Keep the language simple and easy to understand, especially for non-experts.
+                      
+                      User's query: ${input}`
               }]
             }]
           })
@@ -237,6 +290,7 @@ const TaxAssistant: React.FC = () => {
           role: 'assistant',
           content: text,
           timestamp: new Date().toISOString(),
+          name: 'Finacco Solutions'
         };
       } else {
         const systemPrompt = `You are a knowledgeable tax assistant specializing in Indian GST and Income Tax. 
@@ -271,6 +325,7 @@ const TaxAssistant: React.FC = () => {
           role: 'assistant',
           content: text,
           timestamp: new Date().toISOString(),
+          name: 'Finacco Solutions'
         };
       }
 
@@ -327,6 +382,7 @@ const TaxAssistant: React.FC = () => {
         role: 'assistant',
         content: "I apologize, but I'm currently experiencing technical difficulties. Please try again in a few minutes.",
         timestamp: new Date().toISOString(),
+        name: 'Finacco Solutions'
       };
       setMessages(prev => [...prev, errorResponse]);
     } finally {
@@ -556,17 +612,25 @@ const TaxAssistant: React.FC = () => {
                 key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}
               >
-                <div
-                  className={`w-full max-w-4xl rounded-xl p-6 shadow-sm ${
-                    message.role === 'user'
-                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white ml-4'
-                      : 'bg-white border border-gray-100 mr-4'
-                  }`}
-                >
+                <div className={`max-w-[85%] ${message.role === 'user' ? 'ml-auto' : 'mr-auto'}`}>
+                  <div className={`text-sm mb-1 ${message.role === 'user' ? 'text-right' : 'text-left'} text-gray-500`}>
+                    {message.name}
+                  </div>
                   <div
-                    className={`prose ${message.role === 'user' ? 'prose-invert' : ''} max-w-none`}
-                    dangerouslySetInnerHTML={{ __html: message.content }}
-                  />
+                    className={`rounded-xl p-6 shadow-sm ${
+                      message.role === 'user'
+                        ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white'
+                        : 'bg-white border border-gray-100'
+                    }`}
+                  >
+                    <div
+                      className={`prose ${message.role === 'user' ? 'prose-invert' : ''} max-w-none`}
+                      dangerouslySetInnerHTML={{ __html: message.content }}
+                    />
+                  </div>
+                  <div className={`text-xs mt-1 ${message.role === 'user' ? 'text-right' : 'text-left'} text-gray-400`}>
+                    {new Date(message.timestamp).toLocaleTimeString()}
+                  </div>
                 </div>
               </div>
             ))}

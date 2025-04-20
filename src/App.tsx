@@ -13,6 +13,14 @@ const AppContent = () => {
   const location = useLocation();
   const isTaxAssistant = location.pathname === '/tax-assistant';
 
+  useEffect(() => {
+    // Remove 'no preview available' message if it exists
+    const noPreviewMessage = document.querySelector('div[data-vite-dev-id="no-preview"]');
+    if (noPreviewMessage) {
+      noPreviewMessage.remove();
+    }
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-100">
       {!isTaxAssistant && <Navbar />}
