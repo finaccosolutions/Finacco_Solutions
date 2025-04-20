@@ -116,17 +116,21 @@ const TaxAssistant: React.FC = () => {
   };
 
   const formatResponse = (text: string) => {
-    // Add section headers
-    text = text.replace(/^(Overview|Summary|Details|Important Points|Note|References):/gm, '### $1:');
+    // Add section headers with custom styling
+    text = text.replace(
+      /^(Overview|Summary|Details|Important Points|Note|References):/gm,
+      '### $1\n'
+    );
     
-    // Convert bullet points to proper markdown
-    text = text.replace(/^[•●○]/gm, '-');
+    // Convert bullet points to proper markdown with custom styling
+    text = text.replace(/^[•●○]/gm, '- ');
     
     // Add table formatting if there's tabular data
     if (text.includes('|')) {
       const lines = text.split('\n');
       const tableStart = lines.findIndex(line => line.includes('|'));
       if (tableStart !== -1) {
+        // Add table header styling
         lines.splice(tableStart + 1, 0, lines[tableStart].replace(/[^|]/g, '-'));
         text = lines.join('\n');
       }
@@ -358,159 +362,181 @@ const TaxAssistant: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-white pt-16">
-      <div className="container mx-auto px-4">
-        <div className="max-w-7xl mx-auto">
+    <div className="h-screen flex">
+      {/* Sidebar */}
+      <div className={`w-80 bg-gray-50 border-r border-gray-200 flex-shrink-0 transform transition-transform duration-300 ${
+        showHistory ? 'translate-x-0' : '-translate-x-full'
+      } md:translate-x-0 absolute md:relative z-30 h-full`}>
+        <div className="p-4 h-full flex flex-col">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-700">Chat History</h2>
+            <button
+              onClick={() => setShowHistory(false)}
+              className="md:hidden text-gray-500 hover:text-gray-700"
+            >
+              <X size={20} />
+            </button>
+          </div>
+          <div className="flex-grow overflow-y-auto">
+            <div className="space-y-2">
+              {chatHistories.map((chat) => (
+                <div
+                  key={chat.id}
+                  onClick={() => loadChat(chat)}
+                  className="group relative bg-white hover:bg-gray-50 p-4 rounded-lg cursor-pointer transition-colors border border-gray-100 hover:border-blue-100"
+                >
+                  <p className="text-sm font-medium text-gray-700 line-clamp-2 mb-1">{chat.title}</p>
+                  <p className="text-xs text-gray-500">{new Date(chat.created_at).toLocaleDateString()}</p>
+                  <button
+                    onClick={(e) => deleteChat(chat.id, e)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-2 hover:bg-red-50 rounded-full"
+                  >
+                    <Trash2 size={16} className="text-red-500" />
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col h-screen bg-gray-50">
+        {/* Fixed Header */}
+        <div className="bg-white border-b border-gray-200 p-4 fixed top-0 right-0 left-80 z-20">
+          <div className="flex items-center justify-between max-w-6xl mx-auto">
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center shadow-lg">
+                <Brain className="text-white" size={28} />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">Tax Assistant AI</h1>
+                <p className="text-sm text-gray-500">{user?.email}</p>
+              </div>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setShowHistory(true)}
+                className="md:hidden p-2 text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                <History size={20} />
+              </button>
+              <button
+                onClick={clearChat}
+                className="p-2 text-gray-500 hover:text-gray-700 transition-colors group relative"
+                title="Clear all chats"
+              >
+                <Trash2 size={20} />
+                <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                  Clear all chats
+                </span>
+              </button>
+              <button
+                onClick={handleSignOut}
+                className="p-2 text-gray-500 hover:text-gray-700 transition-colors group relative"
+                title="Sign out"
+              >
+                <LogOut size={20} />
+                <span className="absolute -bottom-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+                  Sign out
+                </span>
+              </button>
+            </div>
+          </div>
           {error && (
-            <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700">
+            <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2 text-red-700 max-w-6xl mx-auto">
               <AlertCircle size={20} />
               <p>{error}</p>
             </div>
           )}
-          <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
-            <div className="flex h-[calc(100vh-5rem)]">
-              {/* Sidebar */}
-              <div className={`w-80 bg-gray-50 border-r border-gray-200 flex-shrink-0 transform transition-transform duration-300 ${
-                showHistory ? 'translate-x-0' : '-translate-x-full'
-              } md:translate-x-0 absolute md:relative z-30 h-full`}>
-                <div className="p-4 h-full flex flex-col">
-                  <div className="flex items-center justify-between mb-4">
-                    <h2 className="text-lg font-semibold text-gray-700">Chat History</h2>
-                    <button
-                      onClick={() => setShowHistory(false)}
-                      className="md:hidden text-gray-500 hover:text-gray-700"
-                    >
-                      <X size={20} />
-                    </button>
-                  </div>
-                  <div className="flex-grow overflow-y-auto">
-                    <div className="space-y-2">
-                      {chatHistories.map((chat) => (
-                        <div
-                          key={chat.id}
-                          onClick={() => loadChat(chat)}
-                          className="group relative bg-white hover:bg-gray-50 p-3 rounded-lg cursor-pointer transition-colors"
-                        >
-                          <p className="text-sm font-medium text-gray-700 pr-8 truncate">{chat.title}</p>
-                          <p className="text-xs text-gray-500">{new Date(chat.created_at).toLocaleDateString()}</p>
-                          <button
-                            onClick={(e) => deleteChat(chat.id, e)}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:bg-red-50 rounded-full"
-                          >
-                            <Trash2 size={16} className="text-red-500" />
-                          </button>
+        </div>
+
+        {/* Scrollable Messages Area */}
+        <div className="flex-1 overflow-y-auto pt-24 pb-24 px-4 md:px-6">
+          <div className="max-w-6xl mx-auto space-y-6">
+            {messages.map((message) => (
+              <div
+                key={message.id}
+                className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'} w-full`}
+              >
+                <div
+                  className={`w-full max-w-4xl rounded-xl p-6 shadow-sm ${
+                    message.role === 'user'
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white ml-4'
+                      : 'bg-white border border-gray-100 mr-4'
+                  }`}
+                >
+                  <ReactMarkdown 
+                    className={`prose ${message.role === 'user' ? 'prose-invert' : ''} max-w-none`}
+                    components={{
+                      h3: ({node, ...props}) => (
+                        <h3 
+                          className={`text-xl font-bold mb-4 ${
+                            message.role === 'user' 
+                              ? 'text-white' 
+                              : 'bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent'
+                          }`} 
+                          {...props} 
+                        />
+                      ),
+                      ul: ({node, ...props}) => (
+                        <ul className="list-none space-y-2 my-4" {...props} />
+                      ),
+                      li: ({node, ...props}) => (
+                        <li className="flex items-start space-x-2">
+                          <span className="text-blue-500 mt-1">•</span>
+                          <span {...props} />
+                        </li>
+                      ),
+                      table: ({node, ...props}) => (
+                        <div className="overflow-x-auto my-4 rounded-lg border border-gray-200">
+                          <table className="min-w-full divide-y divide-gray-200" {...props} />
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      ),
+                      th: ({node, ...props}) => (
+                        <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider" {...props} />
+                      ),
+                      td: ({node, ...props}) => (
+                        <td className="px-6 py-4 whitespace-nowrap text-sm" {...props} />
+                      )
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                 </div>
               </div>
-
-              {/* Main Chat Area */}
-              <div className="flex-1 flex flex-col">
-                {/* Header */}
-                <div className="bg-white border-b border-gray-200 p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-4">
-                      <div className="w-10 h-10 rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 flex items-center justify-center">
-                        <Brain className="text-white" size={24} />
-                      </div>
-                      <div>
-                        <h1 className="text-xl font-bold text-gray-800">Tax Assistant AI</h1>
-                        <p className="text-sm text-gray-500">{user?.email}</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center space-x-2">
-                      <button
-                        onClick={() => setShowHistory(true)}
-                        className="md:hidden p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                      >
-                        <History size={20} />
-                      </button>
-                      <button
-                        onClick={clearChat}
-                        className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                        title="Clear all chats"
-                      >
-                        <Trash2 size={20} />
-                      </button>
-                      <button
-                        onClick={handleSignOut}
-                        className="p-2 text-gray-500 hover:text-gray-700 transition-colors"
-                        title="Sign out"
-                      >
-                        <LogOut size={20} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Messages */}
-                <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                    >
-                      <div
-                        className={`max-w-4xl rounded-lg p-6 ${
-                          message.role === 'user'
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-100 text-gray-800'
-                        }`}
-                      >
-                        <ReactMarkdown 
-                          className={`prose ${message.role === 'user' ? 'prose-invert' : 'prose-blue'} max-w-none`}
-                          components={{
-                            h3: ({node, ...props}) => <h3 className="text-lg font-bold mb-2" {...props} />,
-                            ul: ({node, ...props}) => <ul className="list-disc pl-4 space-y-1" {...props} />,
-                            li: ({node, ...props}) => <li className="text-base" {...props} />,
-                            table: ({node, ...props}) => (
-                              <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200" {...props} />
-                              </div>
-                            ),
-                            th: ({node, ...props}) => <th className="px-4 py-2 bg-gray-50 font-semibold" {...props} />,
-                            td: ({node, ...props}) => <td className="px-4 py-2 border-t" {...props} />
-                          }}
-                        >
-                          {message.content}
-                        </ReactMarkdown>
-                      </div>
-                    </div>
-                  ))}
-                  {isLoading && (
-                    <div className="flex justify-start">
-                      <div className="bg-gray-100 rounded-lg p-6">
-                        <Loader2 className="animate-spin" size={24} />
-                      </div>
-                    </div>
-                  )}
-                  <div ref={messagesEndRef} />
-                </div>
-
-                {/* Input */}
-                <div className="border-t border-gray-200 p-4">
-                  <form onSubmit={handleSubmit} className="flex space-x-4">
-                    <input
-                      type="text"
-                      value={input}
-                      onChange={(e) => setInput(e.target.value)}
-                      placeholder="Ask about GST, Income Tax, or any related queries..."
-                      className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      disabled={isLoading || !supabase || (!OPENAI_API_KEY && !GEMINI_API_KEY)}
-                    />
-                    <button
-                      type="submit"
-                      disabled={isLoading || !input.trim() || !supabase || (!OPENAI_API_KEY && !GEMINI_API_KEY)}
-                      className="bg-blue-600 text-white rounded-lg px-6 py-3 hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Send size={20} />
-                    </button>
-                  </form>
+            ))}
+            {isLoading && (
+              <div className="flex justify-start w-full">
+                <div className="bg-white rounded-xl p-6 border border-gray-100 shadow-sm mr-4">
+                  <Loader2 className="animate-spin text-blue-600" size={24} />
                 </div>
               </div>
-            </div>
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+        </div>
+
+        {/* Fixed Input Area */}
+        <div className="border-t border-gray-200 p-4 fixed bottom-0 right-0 left-80 bg-white">
+          <div className="max-w-6xl mx-auto">
+            <form onSubmit={handleSubmit} className="flex space-x-4">
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Ask about GST, Income Tax, or any related queries..."
+                className="flex-1 rounded-lg border border-gray-300 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50 placeholder-gray-400"
+                disabled={isLoading || !supabase || (!OPENAI_API_KEY && !GEMINI_API_KEY)}
+              />
+              <button
+                type="submit"
+                disabled={isLoading || !input.trim() || !supabase || (!OPENAI_API_KEY && !GEMINI_API_KEY)}
+                className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg px-6 py-3 hover:from-blue-700 hover:to-indigo-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg hover:shadow-xl"
+              >
+                <Send size={20} />
+              </button>
+            </form>
           </div>
         </div>
       </div>

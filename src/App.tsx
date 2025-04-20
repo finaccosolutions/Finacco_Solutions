@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, useLocation } from 'react-router-dom';
 import Navbar from './components/Navbar';
 import Hero from './components/Hero';
 import Services from './components/Services';
@@ -8,6 +8,34 @@ import Contact from './components/Contact';
 import Footer from './components/Footer';
 import WhatsAppButton from './components/WhatsAppButton';
 import TaxAssistant from './components/TaxAssistant';
+
+const AppContent = () => {
+  const location = useLocation();
+  const isTaxAssistant = location.pathname === '/tax-assistant';
+
+  return (
+    <div className="min-h-screen bg-gray-100">
+      {!isTaxAssistant && <Navbar />}
+      <Routes>
+        <Route path="/" element={
+          <>
+            <Hero />
+            <Services />
+            <About />
+            <Contact />
+          </>
+        } />
+        <Route path="/tax-assistant" element={<TaxAssistant />} />
+      </Routes>
+      {!isTaxAssistant && (
+        <>
+          <Footer />
+          <WhatsAppButton />
+        </>
+      )}
+    </div>
+  );
+};
 
 function App() {
   useEffect(() => {
@@ -21,22 +49,7 @@ function App() {
 
   return (
     <Router>
-      <div className="min-h-screen bg-gray-100">
-        <Navbar />
-        <Routes>
-          <Route path="/" element={
-            <>
-              <Hero />
-              <Services />
-              <About />
-              <Contact />
-            </>
-          } />
-          <Route path="/tax-assistant" element={<TaxAssistant />} />
-        </Routes>
-        <Footer />
-        <WhatsAppButton />
-      </div>
+      <AppContent />
     </Router>
   );
 }
